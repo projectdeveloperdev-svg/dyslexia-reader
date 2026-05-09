@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "DyslexiaReader"
+version = "1.0.0"
+id = "artifacts/dyslexia-reader"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21834
+
+[services.development]
+run = "pnpm --filter @workspace/dyslexia-reader run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/dyslexia-reader", "run", "build" ]
+publicDir = "artifacts/dyslexia-reader/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21834"
+BASE_PATH = "/"
