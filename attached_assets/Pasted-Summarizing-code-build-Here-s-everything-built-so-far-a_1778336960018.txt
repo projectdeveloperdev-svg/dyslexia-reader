@@ -1,0 +1,214 @@
+Summarizing code build
+Here's everything built so far, all in one place:
+
+artifacts/dyslexia-reader/index.html — entry point, points to src/main.jsx
+
+src/main.jsx
+
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./styles/main.css";
+createRoot(document.getElementById("root")).render(<App />);
+
+src/App.jsx
+
+import ScanButton from "./features/scan/ScanButton";
+function App() {
+  return (
+    <div className="app-root">
+      <h1 className="app-title">DyslexiaReader</h1>
+      <ScanButton />
+    </div>
+  );
+}
+export default App;
+
+src/styles/main.css
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f9f9f9;
+  color: #1a1a1a;
+}
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 2rem 1rem;
+}
+.app-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
+}
+
+src/features/scan/ScanButton.jsx
+
+import { useRef, useState } from "react";
+import { useOCR } from "../ocr/useOCR";
+import "../ocr/OCRResult.css";
+import "./ScanButton.css";
+function ScanButton() {
+  const inputRef = useRef(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const { status, text, runOCR, reset } = useOCR();
+  function handleClick() {
+    reset();
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    inputRef.current.click();
+  }
+  async function handleCapture(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    e.target.value = "";
+    await runOCR(url);
+  }
+  return (
+    <div className="scan-container">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleCapture}
+        style={{ display: "none" }}
+      />
+      <button className="scan-btn" onClick={handleClick}>
+        Scan
+      </button>
+      {status === "loading" && (
+        <div className="ocr-loading">
+          <div className="ocr-spinner" />
+          <span className="ocr-loading-text">Reading your photo…</span>
+        </div>
+      )}
+      {status === "idle" && previewUrl && (
+        <div className="scan-preview">
+          <img src={previewUrl} alt="Captured preview" />
+        </div>
+      )}
+      {status === "done" && (
+        <div className="ocr-result-box">{text}</div>
+      )}
+      {status === "error" && (
+        <p className="ocr-error">No text found. Try another photo.</p>
+      )}
+    </div>
+  );
+}
+export default ScanButton;
+
+src/features/scan/ScanButton.css
+
+.scan-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 480px;
+  padding: 0 1rem;
+}
+.scan-btn {
+  background-color: #1a1a1a;
+  color: #f9f9f9;
+  border: none;
+  border-radius: 12px;
+  padding: 0.85rem 2.5rem;
+  font-size: 1.1rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  width: 100%;
+  max-width: 240px;
+}
+.scan-btn:hover {
+  background-color: #333;
+}
+.scan-btn:active {
+  transform: scale(0.97);
+}
+.scan-preview {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+.scan-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+src/features/ocr/useOCR.js
+
+import { useState, useCallback } from "react";
+import Tesseract from "tesseract.js";
+export function useOCR() {
+  const [status, setStatus] = useState("idle"); // idle | loading | done | error
+  const [text, setText] = useState("");
+  const runOCR = useCallback(async (imageUrl) => {
+    setStatus("loading");
+    setText("");
+    try {
+      const result = await Tesseract.recognize(imageUrl, "eng", {
+        logger: () => {},
+      });
+      const extracted = result.data.text.trim();
+      if (!extracted) {
+        setStatus("error");
+      } else {
+        setText(extracted);
+        setStatus("done");
+      }
+    } catch {
+      setStatus("error");
+    }
+  }, []);
+  const reset = useCallback(() => {
+    setStatus("idle");
+    setText("");
+  }, []);
+  return { status, text, runOCR, reset };
+}
+
+src/features/ocr/OCRResult.css
+
+.ocr-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 0;
+}
+.ocr-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #1a1a1a;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.ocr-loading-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #555;
+}
