@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useOCR } from "../ocr/useOCR";
+import ReadButton from "../tts/ReadButton";
 import "../ocr/OCRResult.css";
 import "./ScanButton.css";
 
@@ -55,7 +56,10 @@ function ScanButton() {
       )}
 
       {status === "done" && (
-        <div className="ocr-result-box">{text}</div>
+        <>
+          <div className="ocr-result-box">{text}</div>
+          <ReadButton text={text} />
+        </>
       )}
 
       {status === "error" && (
