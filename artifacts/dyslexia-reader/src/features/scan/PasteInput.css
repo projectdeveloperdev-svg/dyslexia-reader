@@ -1,0 +1,92 @@
+.paste-btn {
+  background-color: #f0f0f0;
+  color: #1a1a1a;
+  border: 2px solid #d0d0d0;
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  font-size: 1.1rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+  max-width: 180px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.paste-btn:hover {
+  background-color: #e2e2e2;
+}
+
+.paste-btn:active {
+  transform: scale(0.97);
+}
+
+.paste-input-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.paste-textarea {
+  width: 100%;
+  border: 2px solid #d0d0d0;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  color: #1a1a1a;
+  background: #fff;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.paste-textarea:focus {
+  border-color: #1a1a1a;
+}
+
+.paste-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.paste-use-btn {
+  flex: 1;
+  background-color: #1a1a1a;
+  color: #f9f9f9;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.paste-use-btn:hover {
+  background-color: #333;
+}
+
+.paste-use-btn:active {
+  transform: scale(0.97);
+}
+
+.paste-cancel-btn {
+  background: none;
+  color: #888;
+  border: 2px solid #d0d0d0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.paste-cancel-btn:hover {
+  border-color: #aaa;
+  color: #555;
+}

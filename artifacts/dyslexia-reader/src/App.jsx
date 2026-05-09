@@ -1,10 +1,10 @@
-import ScanButton from "./features/scan/ScanButton";
+import ScanSection from "./features/scan/ScanSection";
 
 function App() {
   return (
     <div className="app-root">
       <h1 className="app-title">DyslexiaReader</h1>
-      <ScanButton />
+      <ScanSection />
     </div>
   );
 }
