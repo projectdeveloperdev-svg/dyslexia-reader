@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 
-function buildUtterance({ text, offset, rate, charIndexRef, utteranceOffsetRef, onEnd }) {
+function buildUtterance({ text, offset, rate, pitch, charIndexRef, utteranceOffsetRef, onEnd }) {
   const remaining = text.slice(offset);
   const utterance = new SpeechSynthesisUtterance(remaining);
   utterance.rate = rate;
+  utterance.pitch = pitch;
   utteranceOffsetRef.current = offset;
   utterance.onboundary = (e) => {
     charIndexRef.current = offset + e.charIndex;
@@ -16,15 +17,16 @@ function buildUtterance({ text, offset, rate, charIndexRef, utteranceOffsetRef, 
 export function useTTS(text) {
   const [ttsState, setTtsState] = useState("idle"); // idle | speaking | paused
   const [rate, setRate] = useState(1);
+  const [pitch, setPitch] = useState(1);
 
   const utteranceRef = useRef(null);
   const charIndexRef = useRef(0);
   const utteranceOffsetRef = useRef(0);
   const rateRef = useRef(1);
+  const pitchRef = useRef(1);
 
-  useEffect(() => {
-    rateRef.current = rate;
-  }, [rate]);
+  useEffect(() => { rateRef.current = rate; }, [rate]);
+  useEffect(() => { pitchRef.current = pitch; }, [pitch]);
 
   useEffect(() => {
     window.speechSynthesis.cancel();
@@ -46,7 +48,7 @@ export function useTTS(text) {
     if (ttsState === "idle") {
       charIndexRef.current = 0;
       const utterance = buildUtterance({
-        text, offset: 0, rate: rateRef.current,
+        text, offset: 0, rate: rateRef.current, pitch: pitchRef.current,
         charIndexRef, utteranceOffsetRef, onEnd,
       });
       utteranceRef.current = utterance;
@@ -69,20 +71,33 @@ export function useTTS(text) {
     setTtsState("idle");
   }, []);
 
+  const restartFromCurrent = useCallback((newRate, newPitch) => {
+    window.speechSynthesis.cancel();
+    const utterance = buildUtterance({
+      text, offset: charIndexRef.current,
+      rate: newRate, pitch: newPitch,
+      charIndexRef, utteranceOffsetRef, onEnd,
+    });
+    utteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+    setTtsState("speaking");
+  }, [text, onEnd]);
+
   const changeRate = useCallback((newRate) => {
     setRate(newRate);
     rateRef.current = newRate;
     if (ttsState === "speaking" || ttsState === "paused") {
-      window.speechSynthesis.cancel();
-      const utterance = buildUtterance({
-        text, offset: charIndexRef.current, rate: newRate,
-        charIndexRef, utteranceOffsetRef, onEnd,
-      });
-      utteranceRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
-      setTtsState("speaking");
+      restartFromCurrent(newRate, pitchRef.current);
     }
-  }, [ttsState, text, onEnd]);
+  }, [ttsState, restartFromCurrent]);
 
-  return { ttsState, rate, toggle, stop, changeRate };
+  const changePitch = useCallback((newPitch) => {
+    setPitch(newPitch);
+    pitchRef.current = newPitch;
+    if (ttsState === "speaking" || ttsState === "paused") {
+      restartFromCurrent(rateRef.current, newPitch);
+    }
+  }, [ttsState, restartFromCurrent]);
+
+  return { ttsState, rate, pitch, toggle, stop, changeRate, changePitch };
 }
