@@ -1,0 +1,45 @@
+.scan-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 480px;
+  padding: 0 1rem;
+}
+
+.scan-btn {
+  background-color: #1a1a1a;
+  color: #f9f9f9;
+  border: none;
+  border-radius: 12px;
+  padding: 0.85rem 2.5rem;
+  font-size: 1.1rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  width: 100%;
+  max-width: 240px;
+}
+
+.scan-btn:hover {
+  background-color: #333;
+}
+
+.scan-btn:active {
+  transform: scale(0.97);
+}
+
+.scan-preview {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.scan-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
