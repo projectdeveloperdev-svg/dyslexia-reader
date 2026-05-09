@@ -1,23 +1,29 @@
 import { useRef, useState } from "react";
+import { useOCR } from "../ocr/useOCR";
+import "../ocr/OCRResult.css";
 import "./ScanButton.css";
 
 function ScanButton() {
   const inputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const { status, text, runOCR, reset } = useOCR();
 
   function handleClick() {
+    reset();
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
     inputRef.current.click();
   }
 
-  function handleCapture(e) {
+  async function handleCapture(e) {
     const file = e.target.files[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
-    setPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return url;
-    });
+    setPreviewUrl(url);
     e.target.value = "";
+    await runOCR(url);
   }
 
   return (
@@ -35,10 +41,25 @@ function ScanButton() {
         Scan
       </button>
 
-      {previewUrl && (
+      {status === "loading" && (
+        <div className="ocr-loading">
+          <div className="ocr-spinner" />
+          <span className="ocr-loading-text">Reading your photo…</span>
+        </div>
+      )}
+
+      {status === "idle" && previewUrl && (
         <div className="scan-preview">
           <img src={previewUrl} alt="Captured preview" />
         </div>
+      )}
+
+      {status === "done" && (
+        <div className="ocr-result-box">{text}</div>
+      )}
+
+      {status === "error" && (
+        <p className="ocr-error">No text found. Try another photo.</p>
       )}
     </div>
   );
