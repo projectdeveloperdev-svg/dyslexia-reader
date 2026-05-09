@@ -34,5 +34,11 @@ export function useTTS(text) {
     }
   }, [ttsState, text]);
 
-  return { ttsState, toggle };
+  const stop = useCallback(() => {
+    window.speechSynthesis.cancel();
+    utteranceRef.current = null;
+    setTtsState("idle");
+  }, []);
+
+  return { ttsState, toggle, stop };
 }

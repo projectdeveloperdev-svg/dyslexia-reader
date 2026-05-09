@@ -8,12 +8,20 @@ const LABELS = {
 };
 
 function ReadButton({ text }) {
-  const { ttsState, toggle } = useTTS(text);
+  const { ttsState, toggle, stop } = useTTS(text);
+  const active = ttsState !== "idle";
 
   return (
-    <button className="read-btn" onClick={toggle}>
-      {LABELS[ttsState]}
-    </button>
+    <div className="read-btn-row">
+      <button className="read-btn" onClick={toggle}>
+        {LABELS[ttsState]}
+      </button>
+      {active && (
+        <button className="stop-btn" onClick={stop}>
+          Stop
+        </button>
+      )}
+    </div>
   );
 }
 
