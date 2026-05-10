@@ -1,10 +1,8 @@
 .word-span {
-  display: inline-block;
+  display: inline;
   padding: 0.1em 0.15em;
-  min-width: 1.5em;
   border-radius: 3px;
   cursor: pointer;
-  vertical-align: baseline;
   /* Suppress the default mobile tap highlight — we provide our own via word-highlight */
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.08s ease;
