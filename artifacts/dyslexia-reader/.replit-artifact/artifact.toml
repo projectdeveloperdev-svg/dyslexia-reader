@@ -15,10 +15,10 @@ paths = [ "/" ]
 localPort = 21834
 
 [services.development]
-run = "pnpm --filter @workspace/justlisten run dev"
+run = "pnpm --filter @workspace/dexy run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/justlisten", "run", "build" ]
+build = [ "pnpm", "--filter", "@workspace/dexy", "run", "build" ]
 publicDir = "artifacts/dyslexia-reader/dist/public"
 serve = "static"
 
