@@ -30,6 +30,24 @@
   border-radius: 4px;
 }
 
+.voice-select {
+  flex: 1;
+  border: 2px solid #d0d0d0;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  color: #1a1a1a;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.voice-select:focus {
+  border-color: #2563eb;
+}
+
 .read-btn-row {
   display: flex;
   gap: 0.75rem;

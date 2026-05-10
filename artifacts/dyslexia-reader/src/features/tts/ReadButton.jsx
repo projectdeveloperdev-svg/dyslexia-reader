@@ -8,11 +8,36 @@ const LABELS = {
 };
 
 function ReadButton({ text }) {
-  const { ttsState, rate, pitch, toggle, stop, changeRate, changePitch } = useTTS(text);
+  const {
+    ttsState, rate, pitch, voices, selectedVoice,
+    toggle, stop, changeRate, changePitch, changeVoice,
+  } = useTTS(text);
   const active = ttsState !== "idle";
+
+  function handleVoiceChange(e) {
+    const voice = voices.find((v) => v.name === e.target.value) ?? null;
+    changeVoice(voice);
+  }
 
   return (
     <div className="tts-controls">
+      {voices.length > 0 && (
+        <div className="speed-row">
+          <span className="speed-label">Voice</span>
+          <select
+            className="voice-select"
+            value={selectedVoice?.name ?? ""}
+            onChange={handleVoiceChange}
+          >
+            {voices.map((v) => (
+              <option key={v.name} value={v.name}>
+                {v.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="speed-row">
         <span className="speed-label">Speed: {rate.toFixed(1)}x</span>
         <input
