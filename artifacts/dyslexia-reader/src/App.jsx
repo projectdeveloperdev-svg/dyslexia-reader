@@ -3,7 +3,7 @@ import ScanSection from "./features/scan/ScanSection";
 function App() {
   return (
     <div className="app-root">
-      <h1 className="app-title">DyslexiaReader</h1>
+      <h1 className="app-title">JustListen</h1>
       <ScanSection />
     </div>
   );
