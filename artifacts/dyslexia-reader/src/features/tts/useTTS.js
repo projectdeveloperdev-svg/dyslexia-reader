@@ -61,6 +61,11 @@ export function useTTS(text) {
   }, []);
 
   useEffect(() => {
+    if (utteranceRef.current) {
+      utteranceRef.current.onend = null;
+      utteranceRef.current.onerror = null;
+      utteranceRef.current.onboundary = null;
+    }
     window.speechSynthesis.cancel();
     setTtsState("idle");
     charIndexRef.current = 0;
@@ -98,6 +103,11 @@ export function useTTS(text) {
   }, [ttsState, text, onEnd]);
 
   const stop = useCallback(() => {
+    if (utteranceRef.current) {
+      utteranceRef.current.onend = null;
+      utteranceRef.current.onerror = null;
+      utteranceRef.current.onboundary = null;
+    }
     window.speechSynthesis.cancel();
     utteranceRef.current = null;
     charIndexRef.current = 0;
@@ -105,6 +115,11 @@ export function useTTS(text) {
   }, []);
 
   const restartFromCurrent = useCallback((newRate, newPitch, newVoice) => {
+    if (utteranceRef.current) {
+      utteranceRef.current.onend = null;
+      utteranceRef.current.onerror = null;
+      utteranceRef.current.onboundary = null;
+    }
     window.speechSynthesis.cancel();
     const utterance = buildUtterance({
       text, offset: charIndexRef.current,
