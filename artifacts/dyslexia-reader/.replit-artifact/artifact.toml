@@ -18,7 +18,7 @@ localPort = 21834
 run = "pnpm --filter @workspace/dyslexia-reader run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/dyslexia-reader", "run", "build" ]
+build = [ "pnpm", "--filter", "@workspace/justlisten", "run", "build" ]
 publicDir = "artifacts/dyslexia-reader/dist/public"
 serve = "static"
 
