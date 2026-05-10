@@ -1,0 +1,45 @@
+Yes, here's 5.2 from my build doc:
+
+🤖 REPLIT — Prompt 5.2: Word-by-word highlighting
+
+While speech is playing, highlight the current word being spoken:
+- Use the SpeechSynthesisUtterance "boundary" event with name === "word".
+- The current word should have a yellow background highlight.
+- The highlight moves as each word is spoken.
+- When pause/stop is hit, the highlight stays on the last word until resume or read again.
+
+Note: highlighting works across the queued sentences from Phase 4.
+Do not break sentence chunking.
+
+IMPORTANT — modifications needed:
+
+1. Phase 4.1 (sentence chunking) was reverted last session. There is no sentence chunking to worry about. Ignore that line.
+
+2. On Android Chrome, the "boundary" event with name === "word" does NOT fire reliably. This is the same limitation that broke real pause/resume last session. Building word highlighting purely on onboundary will not work on my phone.
+
+3. We agreed last session to also use this phase to redesign pause as "tap a word to start reading from there" — solving the unshippable pause-restarts-from-beginning bug. The same per-word text splitting powers both features.
+
+So Phase 5.2 is actually TWO things using the same plumbing:
+   a) Split text into per-word elements (spans) — required for both features
+   b) Word highlighting that follows speech AS WELL AS works given onboundary's unreliability on Android
+   c) Tap any word to start reading from that word (replaces the unreliable Resume)
+
+Before writing any code or any Replit prompt, I need:
+
+1. What files will this touch?
+2. What could break? Specifically:
+   - The current Read / Pause / Stop buttons
+   - Speed / pitch / voice sliders
+   - The auto-restart fix
+   - The Resume button (which we're now redesigning — will it still exist, or get removed/relabelled?)
+3. A 3-step implementation plan that addresses the Android onboundary unreliability honestly. If onboundary doesn't fire, what's the fallback for highlighting? Time-based estimation? Or do we accept "highlighting may not work on Android" and rely on tap-to-resume as the primary UX?
+4. Are we keeping the Pause button at all? Options:
+   - Remove Pause entirely. Only Read / Stop / tap-word.
+   - Keep Pause but it just pauses; to resume, user taps a word.
+   - Keep Pause/Resume but Resume now means "start from last highlighted word."
+
+Recommend an option with reasoning.
+
+Wait for my approval before writing any code or Replit prompt.
+
+Reminder: project path is artifacts/dyslexia-reader/, not workspace root.
