@@ -98,3 +98,15 @@
 .stop-btn:active {
   transform: scale(0.97);
 }
+
+.read-btn:disabled {
+  background-color: #93b4f0;
+  cursor: default;
+  transform: none;
+}
+
+.tts-paused-hint {
+  font-size: 0.9rem;
+  color: #555;
+  text-align: center;
+}

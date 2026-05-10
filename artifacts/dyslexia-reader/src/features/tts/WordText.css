@@ -1,0 +1,22 @@
+.word-span {
+  display: inline-block;
+  padding: 0.1em 0.15em;
+  min-width: 1.5em;
+  border-radius: 3px;
+  cursor: pointer;
+  vertical-align: baseline;
+  /* Suppress the default mobile tap highlight — we provide our own via word-highlight */
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.08s ease;
+}
+
+/* Brief flash on tap for tactile feedback */
+.word-span:active {
+  background-color: #ffe082;
+}
+
+/* Active highlight — follows onboundary on desktop; stays frozen on Android */
+.word-highlight {
+  background-color: #ffe066;
+  border-radius: 3px;
+}

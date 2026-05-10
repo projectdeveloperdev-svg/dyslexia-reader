@@ -1,18 +1,17 @@
-import { useTTS } from "./useTTS";
 import "./ReadButton.css";
 
 const LABELS = {
   idle: "Read",
   speaking: "Pause",
-  paused: "Resume",
+  paused: "Paused",
 };
 
-function ReadButton({ text }) {
-  const {
-    ttsState, rate, pitch, voices, selectedVoice,
-    toggle, stop, changeRate, changePitch, changeVoice,
-  } = useTTS(text);
+function ReadButton({
+  ttsState, rate, pitch, voices, selectedVoice,
+  toggle, stop, changeRate, changePitch, changeVoice,
+}) {
   const active = ttsState !== "idle";
+  const paused = ttsState === "paused";
 
   function handleVoiceChange(e) {
     const voice = voices.find((v) => v.name === e.target.value) ?? null;
@@ -65,7 +64,7 @@ function ReadButton({ text }) {
       </div>
 
       <div className="read-btn-row">
-        <button className="read-btn" onClick={toggle}>
+        <button className="read-btn" onClick={toggle} disabled={paused}>
           {LABELS[ttsState]}
         </button>
         {active && (
@@ -74,6 +73,10 @@ function ReadButton({ text }) {
           </button>
         )}
       </div>
+
+      {paused && (
+        <p className="tts-paused-hint">Tap any word to continue</p>
+      )}
     </div>
   );
 }
