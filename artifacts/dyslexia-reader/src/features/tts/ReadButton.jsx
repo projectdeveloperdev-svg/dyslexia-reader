@@ -6,6 +6,16 @@ const LABELS = {
   paused: "Paused",
 };
 
+const BG_COLOURS = [
+  { label: "White",       rgb: "255, 255, 255" },
+  { label: "Cream",       rgb: "255, 253, 240" },
+  { label: "Pale yellow", rgb: "255, 252, 210" },
+  { label: "Pale blue",   rgb: "219, 234, 254" },
+  { label: "Pale peach",  rgb: "255, 224, 210" },
+  { label: "Pale mint",   rgb: "209, 250, 229" },
+  { label: "Pale grey",   rgb: "243, 244, 246" },
+];
+
 const FONT_OPTIONS = [
   { label: "System default", value: "sans-serif" },
   { label: "OpenDyslexic",   value: "OpenDyslexic, sans-serif" },
@@ -19,6 +29,7 @@ function ReadButton({
   toggle, stop, changeRate, changePitch, changeVoice,
   fontSize, changeFontSize,
   fontFamily, changeFontFamily,
+  bgColour, changeBgColour,
 }) {
   const active = ttsState !== "idle";
   const paused = ttsState === "paused";
@@ -56,6 +67,22 @@ function ReadButton({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="speed-row">
+        <span className="speed-label">Background</span>
+        <div className="colour-swatches">
+          {BG_COLOURS.map((opt) => (
+            <button
+              key={opt.rgb}
+              className={`colour-swatch${bgColour === opt.rgb ? " selected" : ""}`}
+              onClick={() => changeBgColour(opt.rgb)}
+              title={opt.label}
+            >
+              <span className="colour-swatch-dot" style={{ background: `rgb(${opt.rgb})` }} />
+            </button>
+          ))}
+        </div>
       </div>
 
       {voices.length > 0 && (

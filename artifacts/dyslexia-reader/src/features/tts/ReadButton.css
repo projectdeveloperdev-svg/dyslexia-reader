@@ -48,6 +48,40 @@
   border-color: #2563eb;
 }
 
+.colour-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  align-items: center;
+  flex: 1;
+}
+
+.colour-swatch {
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.colour-swatch-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.15s ease;
+}
+
+.colour-swatch.selected .colour-swatch-dot {
+  box-shadow: 0 0 0 3px #2563eb;
+}
+
 .read-btn-row {
   display: flex;
   gap: 0.75rem;

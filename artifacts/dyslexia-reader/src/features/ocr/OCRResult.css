@@ -29,7 +29,9 @@
   --ocr-font-size: 1.375rem; /* 22px default — Phase 5.3 will override via inline style */
   width: 100%;
   max-width: 640px;
-  background: #fff;
+  --ocr-bg-rgb: 255, 255, 255;
+  --ocr-bg-opacity: 1;
+  background: rgba(var(--ocr-bg-rgb), var(--ocr-bg-opacity));
   border: 2px solid #e0e0e0;
   border-radius: 12px;
   padding: 1.25rem 2rem;

@@ -16,6 +16,9 @@ function ScanSection() {
   const [fontFamily, setFontFamily] = useState(() => {
     return localStorage.getItem("dexy-font-family") ?? "sans-serif";
   });
+  const [bgColour, setBgColour] = useState(() => {
+    return localStorage.getItem("dexy-bg-colour") ?? "255, 255, 255";
+  });
 
   function changeFontSize(val) {
     setFontSize(val);
@@ -25,6 +28,11 @@ function ScanSection() {
   function changeFontFamily(val) {
     setFontFamily(val);
     localStorage.setItem("dexy-font-family", val);
+  }
+
+  function changeBgColour(val) {
+    setBgColour(val);
+    localStorage.setItem("dexy-bg-colour", val);
   }
 
   const {
@@ -79,7 +87,7 @@ function ScanSection() {
 
       {status === "done" && (
         <>
-          <WordText text={text} wordIndex={wordIndex} onWordTap={seekToWord} fontSize={fontSize} fontFamily={fontFamily} />
+          <WordText text={text} wordIndex={wordIndex} onWordTap={seekToWord} fontSize={fontSize} fontFamily={fontFamily} bgColour={bgColour} />
           <ReadButton
             ttsState={ttsState}
             rate={rate}
@@ -95,6 +103,8 @@ function ScanSection() {
             changeFontSize={changeFontSize}
             fontFamily={fontFamily}
             changeFontFamily={changeFontFamily}
+            bgColour={bgColour}
+            changeBgColour={changeBgColour}
           />
         </>
       )}
