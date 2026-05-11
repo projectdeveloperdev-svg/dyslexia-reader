@@ -2,7 +2,7 @@ import { useMemo, Fragment } from "react";
 import "../ocr/OCRResult.css";
 import "./WordText.css";
 
-function WordText({ text, wordIndex, onWordTap, fontSize }) {
+function WordText({ text, wordIndex, onWordTap, fontSize, fontFamily }) {
   // Split text into alternating word / whitespace segments, each word tagged
   // with its character offset into the original text (for seekToWord).
   const segments = useMemo(() => {
@@ -26,7 +26,7 @@ function WordText({ text, wordIndex, onWordTap, fontSize }) {
   }, [text]);
 
   return (
-    <div className="ocr-result-box" style={{ "--ocr-font-size": `${fontSize}px` }}>
+    <div className="ocr-result-box" style={{ "--ocr-font-size": `${fontSize}px`, fontFamily }}>
       {segments.map((seg, i) => {
         if (seg.type === "space") {
           return <Fragment key={i}>{seg.content}</Fragment>;

@@ -6,10 +6,19 @@ const LABELS = {
   paused: "Paused",
 };
 
+const FONT_OPTIONS = [
+  { label: "System default", value: "sans-serif" },
+  { label: "OpenDyslexic",   value: "OpenDyslexic, sans-serif" },
+  { label: "Arial",          value: "Arial, sans-serif" },
+  { label: "Verdana",        value: "Verdana, sans-serif" },
+  { label: "Georgia",        value: "Georgia, serif" },
+];
+
 function ReadButton({
   ttsState, rate, pitch, voices, selectedVoice,
   toggle, stop, changeRate, changePitch, changeVoice,
   fontSize, changeFontSize,
+  fontFamily, changeFontFamily,
 }) {
   const active = ttsState !== "idle";
   const paused = ttsState === "paused";
@@ -32,6 +41,21 @@ function ReadButton({
           value={fontSize}
           onChange={(e) => changeFontSize(parseInt(e.target.value, 10))}
         />
+      </div>
+
+      <div className="speed-row">
+        <span className="speed-label">Typeface</span>
+        <select
+          className="voice-select"
+          value={fontFamily}
+          onChange={(e) => changeFontFamily(e.target.value)}
+        >
+          {FONT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {voices.length > 0 && (
