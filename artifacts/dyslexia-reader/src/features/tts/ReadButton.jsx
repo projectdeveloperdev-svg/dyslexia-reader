@@ -30,6 +30,7 @@ function ReadButton({
   fontSize, changeFontSize,
   fontFamily, changeFontFamily,
   bgColour, changeBgColour,
+  bgOpacity, changeBgOpacity,
 }) {
   const active = ttsState !== "idle";
   const paused = ttsState === "paused";
@@ -83,6 +84,19 @@ function ReadButton({
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="speed-row">
+        <span className="speed-label">Opacity: {Math.round(bgOpacity * 100)}%</span>
+        <input
+          type="range"
+          className="speed-slider"
+          min="0"
+          max="1"
+          step="0.01"
+          value={bgOpacity}
+          onChange={(e) => changeBgOpacity(parseFloat(e.target.value))}
+        />
       </div>
 
       {voices.length > 0 && (

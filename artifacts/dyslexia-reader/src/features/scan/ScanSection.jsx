@@ -19,6 +19,10 @@ function ScanSection() {
   const [bgColour, setBgColour] = useState(() => {
     return localStorage.getItem("dexy-bg-colour") ?? "255, 255, 255";
   });
+  const [bgOpacity, setBgOpacity] = useState(() => {
+    const stored = localStorage.getItem("dexy-bg-opacity");
+    return stored ? parseFloat(stored) : 1;
+  });
 
   function changeFontSize(val) {
     setFontSize(val);
@@ -33,6 +37,11 @@ function ScanSection() {
   function changeBgColour(val) {
     setBgColour(val);
     localStorage.setItem("dexy-bg-colour", val);
+  }
+
+  function changeBgOpacity(val) {
+    setBgOpacity(val);
+    localStorage.setItem("dexy-bg-opacity", val);
   }
 
   const {
@@ -87,7 +96,7 @@ function ScanSection() {
 
       {status === "done" && (
         <>
-          <WordText text={text} wordIndex={wordIndex} onWordTap={seekToWord} fontSize={fontSize} fontFamily={fontFamily} bgColour={bgColour} />
+          <WordText text={text} wordIndex={wordIndex} onWordTap={seekToWord} fontSize={fontSize} fontFamily={fontFamily} bgColour={bgColour} bgOpacity={bgOpacity} />
           <ReadButton
             ttsState={ttsState}
             rate={rate}
@@ -105,6 +114,8 @@ function ScanSection() {
             changeFontFamily={changeFontFamily}
             bgColour={bgColour}
             changeBgColour={changeBgColour}
+            bgOpacity={bgOpacity}
+            changeBgOpacity={changeBgOpacity}
           />
         </>
       )}
