@@ -88,7 +88,6 @@ function ScanSection() {
   }
 
   function handleChangeVoice(voice) {
-    console.log("[dexy] handleChangeVoice:", voice?.name, voice?.lang, voice?.voiceURI);
     changeVoice(voice);
     try {
       if (voice) localStorage.setItem("dexy-voice", voice.name);
