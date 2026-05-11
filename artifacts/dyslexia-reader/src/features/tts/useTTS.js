@@ -12,6 +12,7 @@ function buildUtterance({ text, offset, rate, pitch, voice, charIndexRef, uttera
   utterance.rate = rate;
   utterance.pitch = pitch;
   if (voice) utterance.voice = voice;
+  console.log("[dexy] speak:", utterance.voice?.name, utterance.voice?.lang, utterance.voice?.voiceURI);
   utteranceOffsetRef.current = offset;
   utterance.onboundary = (e) => {
     if (e.name !== "word") return;
