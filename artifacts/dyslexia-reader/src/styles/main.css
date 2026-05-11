@@ -26,3 +26,9 @@ body {
   letter-spacing: -0.02em;
   color: #1a1a1a;
 }
+
+@media (max-width: 599px) {
+  .app-title {
+    font-size: 1.75rem;
+  }
+}
