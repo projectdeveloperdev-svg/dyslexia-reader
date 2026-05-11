@@ -9,6 +9,15 @@ import "./ScanSection.css";
 function ScanSection() {
   const [status, setStatus] = useState("idle"); // idle | loading | done | error
   const [text, setText] = useState("");
+  const [fontSize, setFontSize] = useState(() => {
+    const stored = localStorage.getItem("dexy-font-size");
+    return stored ? parseInt(stored, 10) : 22;
+  });
+
+  function changeFontSize(val) {
+    setFontSize(val);
+    localStorage.setItem("dexy-font-size", val);
+  }
 
   const {
     ttsState, rate, pitch, voices, selectedVoice,
@@ -62,7 +71,7 @@ function ScanSection() {
 
       {status === "done" && (
         <>
-          <WordText text={text} wordIndex={wordIndex} onWordTap={seekToWord} />
+          <WordText text={text} wordIndex={wordIndex} onWordTap={seekToWord} fontSize={fontSize} />
           <ReadButton
             ttsState={ttsState}
             rate={rate}
@@ -74,6 +83,8 @@ function ScanSection() {
             changeRate={changeRate}
             changePitch={changePitch}
             changeVoice={changeVoice}
+            fontSize={fontSize}
+            changeFontSize={changeFontSize}
           />
         </>
       )}

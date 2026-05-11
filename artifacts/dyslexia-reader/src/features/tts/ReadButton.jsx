@@ -9,6 +9,7 @@ const LABELS = {
 function ReadButton({
   ttsState, rate, pitch, voices, selectedVoice,
   toggle, stop, changeRate, changePitch, changeVoice,
+  fontSize, changeFontSize,
 }) {
   const active = ttsState !== "idle";
   const paused = ttsState === "paused";
@@ -20,6 +21,19 @@ function ReadButton({
 
   return (
     <div className="tts-controls">
+      <div className="speed-row">
+        <span className="speed-label">Font: {fontSize}px</span>
+        <input
+          type="range"
+          className="speed-slider"
+          min="14"
+          max="36"
+          step="1"
+          value={fontSize}
+          onChange={(e) => changeFontSize(parseInt(e.target.value, 10))}
+        />
+      </div>
+
       {voices.length > 0 && (
         <div className="speed-row">
           <span className="speed-label">Voice</span>
