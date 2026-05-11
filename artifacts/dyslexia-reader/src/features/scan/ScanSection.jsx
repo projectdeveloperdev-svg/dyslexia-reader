@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import ScanButton from "./ScanButton";
+import UploadButton from "./UploadButton";
 import PasteInput from "./PasteInput";
 import ReadButton from "../tts/ReadButton";
 import WordText from "../tts/WordText";
@@ -122,6 +123,12 @@ function ScanSection() {
     <div className="scan-section">
       <div className="scan-section-buttons">
         <ScanButton
+          onLoading={handleLoading}
+          onResult={handleResult}
+          onError={handleError}
+          onReset={handleReset}
+        />
+        <UploadButton
           onLoading={handleLoading}
           onResult={handleResult}
           onError={handleError}

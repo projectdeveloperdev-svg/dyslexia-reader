@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { runOCR } from "../ocr/runOCR";
 import "./ScanButton.css";
 
-function ScanButton({ onLoading, onResult, onError, onReset }) {
+function UploadButton({ onLoading, onResult, onError, onReset }) {
   const inputRef = useRef(null);
 
   function handleClick() {
@@ -10,7 +10,7 @@ function ScanButton({ onLoading, onResult, onError, onReset }) {
     inputRef.current.click();
   }
 
-  async function handleCapture(e) {
+  async function handleSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
@@ -32,15 +32,14 @@ function ScanButton({ onLoading, onResult, onError, onReset }) {
         ref={inputRef}
         type="file"
         accept="image/*"
-        capture="environment"
-        onChange={handleCapture}
+        onChange={handleSelect}
         style={{ display: "none" }}
       />
       <button className="scan-btn" onClick={handleClick}>
-        Scan
+        Upload
       </button>
     </>
   );
 }
 
-export default ScanButton;
+export default UploadButton;
