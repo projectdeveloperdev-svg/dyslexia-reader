@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import ScanButton from "./ScanButton";
 import PasteInput from "./PasteInput";
 import ReadButton from "../tts/ReadButton";
@@ -50,6 +50,49 @@ function ScanSection() {
     toggle, stop, seekToWord,
     changeRate, changePitch, changeVoice,
   } = useTTS(text);
+
+  // Restore rate and pitch from localStorage on mount.
+  // ttsState is always "idle" here so changeRate/changePitch only set state — no restart.
+  useEffect(() => {
+    const stored = localStorage.getItem("dexy-speed");
+    if (stored) changeRate(parseFloat(stored));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const stored = localStorage.getItem("dexy-pitch");
+    if (stored) changePitch(parseFloat(stored));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Restore voice when voices list first populates.
+  // Runs at most once (ref guard). Does NOT write to localStorage so that a
+  // saved voice unavailable on this device is preserved for future use.
+  const voiceRestored = useRef(false);
+  useEffect(() => {
+    if (voiceRestored.current || !voices.length) return;
+    voiceRestored.current = true;
+    const savedName = localStorage.getItem("dexy-voice");
+    if (!savedName) return;
+    const saved = voices.find((v) => v.name === savedName);
+    if (saved) changeVoice(saved);
+  }, [voices]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Wrappers that persist audio settings to localStorage.
+  function handleChangeRate(val) {
+    changeRate(val);
+    try { localStorage.setItem("dexy-speed", val); } catch (e) { console.error("localStorage write failed:", e); }
+  }
+
+  function handleChangePitch(val) {
+    changePitch(val);
+    try { localStorage.setItem("dexy-pitch", val); } catch (e) { console.error("localStorage write failed:", e); }
+  }
+
+  function handleChangeVoice(voice) {
+    changeVoice(voice);
+    try {
+      if (voice) localStorage.setItem("dexy-voice", voice.name);
+    } catch (e) { console.error("localStorage write failed:", e); }
+  }
 
   function handleLoading() {
     setStatus("loading");
@@ -105,9 +148,9 @@ function ScanSection() {
             selectedVoice={selectedVoice}
             toggle={toggle}
             stop={stop}
-            changeRate={changeRate}
-            changePitch={changePitch}
-            changeVoice={changeVoice}
+            changeRate={handleChangeRate}
+            changePitch={handleChangePitch}
+            changeVoice={handleChangeVoice}
             fontSize={fontSize}
             changeFontSize={changeFontSize}
             fontFamily={fontFamily}
