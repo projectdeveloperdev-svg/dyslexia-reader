@@ -79,7 +79,7 @@ export function useTTS(text) {
   // Load voices — must handle async population in Chrome/Android
   useEffect(() => {
     function loadVoices() {
-      const all      = window.speechSynthesis.getVoices();
+      const all      = window.speechSynthesis?.getVoices() ?? [];
       const filtered = filterVoices(all);
       if (filtered.length === 0) return;
       setVoices(filtered);
@@ -90,6 +90,7 @@ export function useTTS(text) {
       });
     }
 
+    if (!window.speechSynthesis) return;
     loadVoices();
     window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
     return () => {
@@ -100,7 +101,7 @@ export function useTTS(text) {
   // Reset when text changes (new scan or paste)
   useEffect(() => {
     nullHandlers();
-    window.speechSynthesis.cancel();
+    window.speechSynthesis?.cancel();
     setTtsState("idle");
     setWordIndex(-1);
     charIndexRef.current  = 0;
@@ -111,7 +112,7 @@ export function useTTS(text) {
   useEffect(() => {
     return () => {
       nullHandlers();
-      window.speechSynthesis.cancel();
+      window.speechSynthesis?.cancel();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -126,7 +127,7 @@ export function useTTS(text) {
     // Cancel explicitly after natural completion.
     // On Android Chrome the speech queue is not reliably cleared when onend fires,
     // which causes the utterance to restart from the beginning.
-    window.speechSynthesis.cancel();
+    window.speechSynthesis?.cancel();
     charIndexRef.current = 0;
     utteranceRef.current = null;
     setWordIndex(-1);
@@ -147,12 +148,12 @@ export function useTTS(text) {
         charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
       });
       utteranceRef.current = utterance;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+      window.speechSynthesis?.cancel();
+      window.speechSynthesis?.speak(utterance);
       setTtsState("speaking");
 
     } else if (ttsState === "speaking") {
-      window.speechSynthesis.pause();
+      window.speechSynthesis?.pause();
       setTtsState("paused");
 
     } else if (ttsState === "paused") {
@@ -164,21 +165,21 @@ export function useTTS(text) {
       // beginning of the text rather than the exact pause point — accepted
       // trade-off, not a bug. Tap-to-word is the primary resume UX on Android.
       nullHandlers();
-      window.speechSynthesis.cancel();
+      window.speechSynthesis?.cancel();
       const utterance = buildUtterance({
         text, offset: charIndexRef.current,
         rate: rateRef.current, pitch: pitchRef.current, voice: voiceRef.current,
         charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
       });
       utteranceRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
+      window.speechSynthesis?.speak(utterance);
       setTtsState("speaking");
     }
   }, [ttsState, text, onEnd, onWordBoundary]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stop = useCallback(() => {
     nullHandlers();
-    window.speechSynthesis.cancel();
+    window.speechSynthesis?.cancel();
     utteranceRef.current  = null;
     charIndexRef.current  = 0;
     setWordIndex(-1);
@@ -187,14 +188,14 @@ export function useTTS(text) {
 
   const restartFromCurrent = useCallback((newRate, newPitch, newVoice) => {
     nullHandlers();
-    window.speechSynthesis.cancel();
+    window.speechSynthesis?.cancel();
     const utterance = buildUtterance({
       text, offset: charIndexRef.current,
       rate: newRate, pitch: newPitch, voice: newVoice,
       charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
     });
     utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
+    window.speechSynthesis?.speak(utterance);
     setTtsState("speaking");
   }, [text, onEnd, onWordBoundary]);
 
@@ -204,7 +205,7 @@ export function useTTS(text) {
   // the user taps a word to start reading from exactly that position.
   const seekToWord = useCallback((charOffset, wordIdx) => {
     nullHandlers();
-    window.speechSynthesis.cancel();
+    window.speechSynthesis?.cancel();
     charIndexRef.current = charOffset;
     setWordIndex(wordIdx);
     const utterance = buildUtterance({
@@ -213,7 +214,7 @@ export function useTTS(text) {
       charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
     });
     utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
+    window.speechSynthesis?.speak(utterance);
     setTtsState("speaking");
   }, [text, onEnd, onWordBoundary]); // eslint-disable-line react-hooks/exhaustive-deps
 
