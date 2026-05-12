@@ -1,0 +1,120 @@
+📋 DEXY — SESSION HANDOVER (12 May 2026)
+Where the project is
+Dexy is a phone-only accessibility app for dyslexic users: scan or paste text → it reads aloud with customisable display + voice. Built in React via Replit. Target: Play Store (Android first).
+Phases complete: 1–7 plus Phase 8 Stage 1.
+Current point: End of Phase 8 Stage 1. Ready to start Stage 2 (Capacitor install).
+
+What works right now
+
+Core flow: Scan (camera) → OCR → editable text → tap Read → speech with word highlighting and tap-to-resume
+Backup paths: Upload from gallery, paste text
+Display settings (all persisted): font size (14–36px), typeface (System/OpenDyslexic/Arial/Verdana/Georgia), background colour (7 pale presets), overlay opacity
+Audio settings (all persisted): voice, speed, pitch
+Auto-read toggle (default OFF, persisted)
+OpenDyslexic bundled locally (no CDN dependency)
+Production build works from any shell (npm run build → dist/public/)
+
+8 localStorage keys: dexy-font-size, dexy-font-family, dexy-bg-colour, dexy-bg-opacity, dexy-voice, dexy-speed, dexy-pitch, dexy-auto-read
+
+What's parked (known, do NOT fix)
+
+Tesseract.js hallucinates on non-text photos. Phase 8 Stage 5 swaps for Google ML Kit.
+Voice dropdown is decorative on Android web — Chrome ignores SpeechSynthesis voice selection. Phase 8 Stage 5 swaps for Capacitor TTS plugin.
+Tap-to-resume is touch-only by design (desktop click triggers browser text selection). Not fixing — phone-only app.
+
+
+Hard rules
+
+No Replit Database. Ever. localStorage now, Supabase only if Phase 10 happens.
+Phone-first, phone-only. Don't waste time on desktop UX.
+Don't test scan quality on Tesseract — use clean printed text only until ML Kit lands.
+Private GitHub repo. Confirmed.
+Build verified clean: 70 modules, 215 KB JS (68 KB gzipped), zero errors/warnings.
+
+
+Project decisions locked
+
+App ID: com.develop.dyslexiareader (permanent, invisible to users)
+Display name: "Dexy" (changeable later, do trademark search 2 weeks before Play Store submission)
+Working branch: build. main protected.
+Computer for Android Studio: Windows desktop, modern, USB cable confirmed
+Android Studio: download in progress / to be started
+
+
+Phase 8 plan (revised after pre-flight)
+Stage 1 — Web cleanup ✅ DONE
+
+1A: OpenDyslexic local
+1B: useOCR.js deleted
+1C: Vite config fixed (PORT only required for serve, not build)
+
+Stage 2 — Capacitor install ← NEXT
+
+Install @capacitor/core, @capacitor/cli, @capacitor/android
+npx cap init with App ID com.develop.dyslexiareader
+npm run build
+npx cap add android
+Push to git immediately — Replit can lose untracked folders
+Confirm webDir is dist/public (Vite outputs there, not plain dist)
+
+Stage 3 — Local Android Studio setup (laptop, ~half a day)
+
+Install Android Studio on Windows desktop
+Clone repo from GitHub
+Open /android folder in Android Studio
+Enable Developer Mode + USB debugging on phone
+Run app on phone via USB
+
+Stage 4 — Permissions + on-phone testing
+
+Add manifest permissions (CAMERA, READ_EXTERNAL_STORAGE, READ_MEDIA_IMAGES)
+Test full flow on real device
+
+Stage 5 — Plugin swaps (the big code change)
+
+Install @capacitor/camera, refactor Scan/Upload buttons
+Install @capacitor-mlkit/text-recognition, refactor runOCR.js
+Install @capacitor-community/text-to-speech, rewrite useTTS
+Risk to investigate: word-boundary events in TTS plugin (needed for highlighting + tap-to-resume)
+
+Stage 6 — Signed AAB
+
+Generate keystore (BACK UP TWICE — cloud drive + USB stick, both)
+Build signed release AAB
+Save keystore password in password manager only
+
+
+Key technical patterns to remember (already in starter template as lessons 7–10)
+
+Private repo from day 1 (going public-then-private doesn't un-publish)
+Wrapper pattern for persisted settings — handle* functions wrapping hook methods, with localStorage writes
+Platform may be the bug, not your code — test on desktop to rule out real bug before "fixing" working code
+useRef + useEffect pattern for triggering actions after async state settles (used in auto-read)
+
+
+How the user (Phil) works best
+(From starter template — repeat to next Claude session)
+
+Dyslexia, ADHD, HFASD, OCD — short sentences, white space, one idea per line, direct language
+Build one feature at a time, test, confirm, then move on
+Show plan before code, get approval, then build
+End-of-session summary always: ✅ done / ⚠️ broken / ➡️ next / 📌 remember
+Phil orchestrates and tests; Replit writes code; Claude plans and reviews
+
+
+Files Phil has
+
+dyslexia_reader_build_prompts.md (the build doc — updated with security section)
+project_starter_template.md (the reusable template — updated with security section + 4 Dexy lessons)
+GitHub repo: projectdeveloperdev-svg/dyslexia-reader (private, branch: build)
+
+
+What to do at the start of next chat
+
+Confirm Android Studio is downloaded or downloading. If not, kick it off first (https://developer.android.com/studio).
+Check git status in Replit shell. Should show "up to date with origin/build". If not, push first.
+Run the Capacitor pre-flight one more time if any details feel fuzzy, then start Stage 2.
+
+
+That should give the next Claude session everything it needs. Save this in your notes alongside the build doc and starter template.
+Good run today. See you in the next chat.
