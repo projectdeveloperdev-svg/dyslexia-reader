@@ -1,0 +1,48 @@
+We need to do a clean production build of the web app, fix a localhost bug in it, and commit the build output to git so it can be pulled onto my Windows desktop and used by Capacitor on Android.
+
+Context:
+- The Android app is built and installed on my Honor phone via Capacitor
+- When it launches, it shows "the web page at https://localhost/ could not be loaded"
+- That means the production build is referencing a dev server URL, OR the bundled web files aren't being loaded
+- capacitor.config.ts is clean - webDir is "dist/public", no server.url, no hostname tricks
+- The fix needs to happen in Vite config and/or Replit dev plugins that inject localhost
+
+Do these in order. STOP after each step and report.
+
+Step 1: Investigate
+- Read artifacts/dyslexia-reader/vite.config.ts (or .js)
+- List every Vite plugin in use, especially anything starting with @replit/
+- Tell me which plugin(s) are likely to inject localhost URLs into the build
+- Do NOT fix anything yet - just report
+
+Step 2: Plan the fix
+- Show me what you'd change in vite.config to ensure no localhost URLs in the production build
+- The fix should ONLY affect production builds, not dev mode
+- Explain the change in plain English
+- WAIT for my approval
+
+Step 3 (after my approval): Apply the fix
+- Make only the change you described
+- Do NOT change capacitor.config.ts
+- Do NOT change any feature code (TTS, OCR, settings, components)
+
+Step 4: Rebuild
+- Run: cd artifacts/dyslexia-reader && pnpm run build
+- Confirm dist/public/ exists with index.html
+- Run: grep -r "localhost" dist/public/ | head -10
+- Report what you find. We want zero localhost references in the bundled JS.
+
+Step 5: Update .gitignore to allow dist/public/
+- The root .gitignore has "dist" which blocks dist/public/ from git
+- Add an exception so we CAN commit dist/public for now
+- Or: add a comment line explaining this is a temporary exception until we move to a proper CI build
+
+Step 6: Show me git status
+- List what files would be added/changed
+- DO NOT commit yet. Wait for my approval.
+
+Constraints:
+- Do not push to git. I push from the shell myself.
+- Do not change capacitor.config.ts
+- Do not change app code (only Vite config and .gitignore)
+- Do not start a "Run" or "Publish" - just build
