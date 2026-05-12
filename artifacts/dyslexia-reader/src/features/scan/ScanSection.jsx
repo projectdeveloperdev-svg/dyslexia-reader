@@ -12,6 +12,10 @@ function ScanSection() {
   const [text, setText] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
+  const [autoRead, setAutoRead] = useState(() => {
+    return localStorage.getItem("dexy-auto-read") === "true";
+  });
+  const autoReadPendingRef = useRef(false);
   const [fontSize, setFontSize] = useState(() => {
     const stored = localStorage.getItem("dexy-font-size");
     return stored ? parseInt(stored, 10) : 22;
@@ -97,6 +101,20 @@ function ScanSection() {
     } catch (e) { console.error("localStorage write failed:", e); }
   }
 
+  function changeAutoRead(val) {
+    setAutoRead(val);
+    try { localStorage.setItem("dexy-auto-read", val); } catch (e) { console.error("localStorage write failed:", e); }
+  }
+
+  // Fire auto-read once useTTS has settled on the new text (ttsState resets to
+  // "idle" after text changes). The ref flag ensures it triggers exactly once
+  // and only on successful OCR with non-empty text.
+  useEffect(() => {
+    if (!autoReadPendingRef.current || !text || ttsState !== "idle") return;
+    autoReadPendingRef.current = false;
+    toggle();
+  }, [text, ttsState, toggle]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleEditStart() {
     stop();
     setEditValue(text);
@@ -120,6 +138,7 @@ function ScanSection() {
     } else {
       setText(extracted);
       setStatus("done");
+      if (autoRead) autoReadPendingRef.current = true;
     }
   }
 
@@ -135,6 +154,20 @@ function ScanSection() {
 
   return (
     <div className="scan-section">
+      <label className="auto-read-row" htmlFor="auto-read-toggle">
+        <span className="auto-read-label">Auto-read after scan</span>
+        <span className={`toggle-track${autoRead ? " toggle-on" : ""}`}>
+          <span className="toggle-thumb" />
+        </span>
+        <input
+          id="auto-read-toggle"
+          type="checkbox"
+          className="toggle-input"
+          checked={autoRead}
+          onChange={(e) => changeAutoRead(e.target.checked)}
+        />
+      </label>
+
       <div className="scan-section-buttons">
         <ScanButton
           onLoading={handleLoading}

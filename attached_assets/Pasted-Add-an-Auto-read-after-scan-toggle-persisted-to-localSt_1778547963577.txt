@@ -1,0 +1,60 @@
+Add an "Auto-read after scan" toggle, persisted to localStorage.
+
+UI:
+- iOS-style toggle switch (not a checkbox).
+- Label: "Auto-read after scan"
+- Location: near the Scan / Upload / Paste buttons, visible from app open
+  (NOT inside the controls panel — that only appears after a scan, so the
+  toggle wouldn't be reachable until after the first scan).
+- The toggle must be visible whether or not OCR has been run yet.
+- Layout: should fit the existing stacked phone layout cleanly without
+  squishing the action buttons. Use your judgement on exact placement
+  (e.g. below the three buttons, above them, or as a single row with
+  label + switch).
+- Minimum 44x44px tap target on the switch itself.
+
+Default: OFF.
+
+Behaviour:
+- When OFF: current behaviour. OCR completes, user taps Read to start
+  speech.
+- When ON: as soon as OCR completes successfully AND text was found,
+  speech starts automatically — exactly as if the user had tapped Read.
+- Auto-read MUST NOT trigger if:
+  * OCR returned no text ("No text found" case)
+  * OCR errored
+  * The text is empty after trimming
+- Applies to both Scan and Upload paths (and Paste, if Paste uses the
+  same downstream flow).
+
+Persistence:
+- localStorage key: `dexy-auto-read` (following the existing `dexy-{name}`
+  convention).
+- Value: stored as "true" or "false" string (or JSON boolean — your call,
+  just be consistent with how the other 7 settings are stored).
+- On app load: read the key. If missing, default to OFF. If present, apply
+  the saved value.
+- When the toggle changes, write to localStorage immediately.
+- If localStorage write fails, log the error to console. Do not silently
+  fail. Do not crash.
+
+Persistence rule: localStorage only. Do NOT use Replit Database, Replit
+KV, or any server-side storage.
+
+Do NOT change:
+- useTTS.js (the auto-read trigger should call the existing speech-start
+  function from outside the hook, same way the Read button does)
+- runOCR.js or any OCR logic
+- Existing persisted settings logic
+- Button styles, title, layout of existing controls
+
+Expected: 2-3 files changed. Likely ScanSection.jsx (state + toggle render
++ auto-read trigger logic) and a CSS file for the toggle switch styling.
+Possibly a small new component for the toggle itself if that's cleaner.
+
+Before writing code: read the relevant files and outline the plan,
+specifically:
+- Which component owns the auto-read state
+- Where exactly the auto-read trigger fires after OCR completes
+- How the "no text found" / error cases are excluded
+Confirm before making changes.
