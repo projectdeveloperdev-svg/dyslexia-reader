@@ -2,6 +2,12 @@
 
 # compiled output
 dist
+# Temporary exception: commit the Capacitor web bundle so it can be pulled onto
+# the Windows desktop and used by `npx cap sync android` without a CI pipeline.
+# Remove this exception once a proper CI build is in place.
+!artifacts/dyslexia-reader/dist/
+!artifacts/dyslexia-reader/dist/public/
+!artifacts/dyslexia-reader/dist/public/**
 tmp
 out-tsc
 *.tsbuildinfo
