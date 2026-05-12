@@ -10,6 +10,8 @@ import "./ScanSection.css";
 function ScanSection() {
   const [status, setStatus] = useState("idle"); // idle | loading | done | error
   const [text, setText] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
   const [fontSize, setFontSize] = useState(() => {
     const stored = localStorage.getItem("dexy-font-size");
     return stored ? parseInt(stored, 10) : 22;
@@ -95,6 +97,18 @@ function ScanSection() {
     } catch (e) { console.error("localStorage write failed:", e); }
   }
 
+  function handleEditStart() {
+    stop();
+    setEditValue(text);
+    setIsEditing(true);
+  }
+
+  function handleEditDone() {
+    const newText = editValue.trim();
+    if (newText) setText(newText);
+    setIsEditing(false);
+  }
+
   function handleLoading() {
     setStatus("loading");
     setText("");
@@ -146,7 +160,21 @@ function ScanSection() {
 
       {status === "done" && (
         <>
-          <WordText text={text} wordIndex={wordIndex} onWordTap={seekToWord} fontSize={fontSize} fontFamily={fontFamily} bgColour={bgColour} bgOpacity={bgOpacity} />
+          <div className="ocr-edit-wrapper">
+            {isEditing ? (
+              <textarea
+                className="ocr-edit-textarea"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                style={{ "--ocr-font-size": `${fontSize}px`, fontFamily, "--ocr-bg-rgb": bgColour, "--ocr-bg-opacity": bgOpacity }}
+              />
+            ) : (
+              <WordText text={text} wordIndex={wordIndex} onWordTap={seekToWord} fontSize={fontSize} fontFamily={fontFamily} bgColour={bgColour} bgOpacity={bgOpacity} />
+            )}
+            <button className="ocr-edit-btn" onClick={isEditing ? handleEditDone : handleEditStart}>
+              {isEditing ? "Done" : "Edit"}
+            </button>
+          </div>
           <ReadButton
             ttsState={ttsState}
             rate={rate}
