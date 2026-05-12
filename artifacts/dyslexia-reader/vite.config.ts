@@ -31,7 +31,7 @@ export default defineConfig(async ({ command }) => {
   }
 
   return {
-    base: basePath ?? "/",
+    base: isServe ? (basePath ?? "/") : "./",
     plugins: [
       react(),
       tailwindcss(),
