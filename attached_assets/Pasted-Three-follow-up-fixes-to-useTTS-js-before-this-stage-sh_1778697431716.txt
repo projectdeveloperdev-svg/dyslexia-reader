@@ -1,0 +1,60 @@
+Three follow-up fixes to useTTS.js before this stage ships. Do these and nothing else.
+
+FIX 1 — Voice filter change.
+Current code (lines around 88–89):
+  const english  = raw.filter((v) => v.lang && v.lang.startsWith("en"));
+  const filtered = english.length > 0 ? english : raw;
+  setVoices(filtered);
+
+Change to: show ALL voices. No filter. But default the initial selection to an English voice if one exists.
+
+Specifically:
+  setVoices(raw);                  // full list, no filter
+  voicesRef.current = raw;
+
+  const savedUri = localStorage.getItem("dexy-voice");
+  const savedMatch = savedUri ? raw.find((v) => v.voiceURI === savedUri) : null;
+  const englishMatch = raw.find((v) => v.lang && v.lang.startsWith("en"));
+  const initial = savedMatch ?? englishMatch ?? raw[0] ?? null;
+
+  setSelectedVoice(initial);
+  voiceRef.current = initial;
+
+So: saved voice wins. If no saved voice, prefer English. If no English voice, take the first one.
+
+FIX 2 — Paused-state regression in changeRate / changePitch / changeVoice.
+
+Right now: if the user changes rate/pitch/voice while paused, restartFromCurrent() is called, which calls setTtsState("speaking") and resumes playback. That's wrong — pause should stay pause.
+
+Change all three (changeRate, changePitch, changeVoice) so they only restart if ttsState === "speaking". When paused, just update the refs and the React state (so the UI control reflects the new value); don't call restartFromCurrent. The new rate/pitch/voice will take effect when the user resumes via toggle().
+
+Example for changeRate:
+  const changeRate = useCallback((newRate) => {
+    setRate(newRate);
+    rateRef.current = newRate;
+    if (ttsState === "speaking") {
+      restartFromCurrent(newRate, pitchRef.current, voiceRef.current);
+    }
+  }, [ttsState, restartFromCurrent]);
+
+Same edit for changePitch and changeVoice — drop the "|| ttsState === 'paused'" branch.
+
+FIX 3 — Settings persistence check.
+
+The project's session handover lists "8 localStorage keys" for display + audio settings. The current useTTS only reads dexy-voice on load and never writes it. Check whether the persistence layer for rate, pitch, and voice was in the OLD useTTS.js or in a parent component.
+
+- If it was in the old useTTS.js: restore it. Read dexy-rate, dexy-pitch on mount; write back when changeRate/changePitch/changeVoice fires. Use the same localStorage key names as the old code (do not rename keys — that would silently lose existing users' settings).
+- If it was in a parent component: leave it. Just confirm it back to me.
+
+Either way, report:
+  - The exact localStorage keys used for rate, pitch, voice.
+  - Whether they're written from useTTS.js or from elsewhere.
+  - Confirm dexy-voice writing happens somewhere (currently I only see reading on load — does the write happen elsewhere, or is it missing entirely?).
+
+OUTPUT:
+- The diff for each fix, not the whole file again.
+- For fix 3, report findings AND any code changes you made.
+- Run a production build. Confirm success.
+- Confirm /src/features/scan/, /src/features/ocr/, capacitor.config — untouched.
+
+DO NOT change anything else. No "while I was in there" tidy-ups, no improvements I didn't ask for.

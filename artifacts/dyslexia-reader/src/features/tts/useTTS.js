@@ -84,16 +84,15 @@ export function useTTS(text) {
         const { voices: raw } = await TextToSpeech.getSupportedVoices();
         if (!raw || raw.length === 0) return;
 
-        // Prefer English voices, fall back to all if none found.
-        const english  = raw.filter((v) => v.lang && v.lang.startsWith("en"));
-        const filtered = english.length > 0 ? english : raw;
-        setVoices(filtered);
-        voicesRef.current = filtered;
+        // Show all voices. Persistence and restoration is handled entirely by
+        // ScanSection (reads/writes dexy-voice via changeVoice). Here we only
+        // set an initial default: prefer the first English voice so the app is
+        // usable before the parent's restoration effect fires.
+        setVoices(raw);
+        voicesRef.current = raw;
 
-        // Restore saved voice by URI so it survives list reordering.
-        const savedUri = localStorage.getItem("dexy-voice");
-        const found    = savedUri ? filtered.find((v) => v.voiceURI === savedUri) : null;
-        const initial  = found ?? filtered[0] ?? null;
+        const englishMatch = raw.find((v) => v.lang && v.lang.startsWith("en"));
+        const initial = englishMatch ?? raw[0] ?? null;
         setSelectedVoice(initial);
         voiceRef.current = initial;
       } catch (err) {
@@ -296,7 +295,7 @@ export function useTTS(text) {
   const changeRate = useCallback((newRate) => {
     setRate(newRate);
     rateRef.current = newRate;
-    if (ttsState === "speaking" || ttsState === "paused") {
+    if (ttsState === "speaking") {
       restartFromCurrent(newRate, pitchRef.current, voiceRef.current);
     }
   }, [ttsState, restartFromCurrent]);
@@ -304,7 +303,7 @@ export function useTTS(text) {
   const changePitch = useCallback((newPitch) => {
     setPitch(newPitch);
     pitchRef.current = newPitch;
-    if (ttsState === "speaking" || ttsState === "paused") {
+    if (ttsState === "speaking") {
       restartFromCurrent(rateRef.current, newPitch, voiceRef.current);
     }
   }, [ttsState, restartFromCurrent]);
@@ -312,7 +311,7 @@ export function useTTS(text) {
   const changeVoice = useCallback((newVoice) => {
     setSelectedVoice(newVoice);
     voiceRef.current = newVoice;
-    if (ttsState === "speaking" || ttsState === "paused") {
+    if (ttsState === "speaking") {
       restartFromCurrent(rateRef.current, pitchRef.current, newVoice);
     }
   }, [ttsState, restartFromCurrent]);
