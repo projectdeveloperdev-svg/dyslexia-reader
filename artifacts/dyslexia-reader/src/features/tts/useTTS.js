@@ -1,5 +1,15 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 
+// Checked once at module load — some Android WebViews omit the Web Speech API entirely.
+const TTS_AVAILABLE =
+  typeof window !== "undefined" &&
+  "speechSynthesis" in window &&
+  "SpeechSynthesisUtterance" in window;
+
+if (!TTS_AVAILABLE) {
+  console.warn("[useTTS] Web Speech API not available on this device — TTS disabled.");
+}
+
 function filterVoices(all) {
   const english = all.filter((v) => v.lang.startsWith("en"));
   const preferred = english.filter((v) => /Google|Microsoft|Natural/i.test(v.name));
@@ -7,6 +17,7 @@ function filterVoices(all) {
 }
 
 function buildUtterance({ text, offset, rate, pitch, voice, charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary }) {
+  if (!TTS_AVAILABLE) return null;
   const remaining = text.slice(offset);
   const utterance = new SpeechSynthesisUtterance(remaining);
   utterance.rate = rate;
@@ -78,6 +89,8 @@ export function useTTS(text) {
 
   // Load voices — must handle async population in Chrome/Android
   useEffect(() => {
+    if (!TTS_AVAILABLE) return;
+
     function loadVoices() {
       const all      = window.speechSynthesis?.getVoices() ?? [];
       const filtered = filterVoices(all);
@@ -90,7 +103,6 @@ export function useTTS(text) {
       });
     }
 
-    if (!window.speechSynthesis) return;
     loadVoices();
     window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
     return () => {
@@ -117,6 +129,7 @@ export function useTTS(text) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onEnd = useCallback((e) => {
+    if (!TTS_AVAILABLE) return;
     // Null handlers via the event target (precise — avoids stale ref issues if
     // this fires for an older utterance after a new one was already queued).
     if (e && e.target) {
@@ -135,6 +148,7 @@ export function useTTS(text) {
   }, []);
 
   const toggle = useCallback(() => {
+    if (!TTS_AVAILABLE) return;
     if (ttsState === "idle") {
       // Null handlers on any previous (completed) utterance before calling cancel().
       // On Android Chrome, cancel() can fire onend/onerror on a completed utterance
@@ -147,6 +161,7 @@ export function useTTS(text) {
         rate: rateRef.current, pitch: pitchRef.current, voice: voiceRef.current,
         charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
       });
+      if (!utterance) return;
       utteranceRef.current = utterance;
       window.speechSynthesis?.cancel();
       window.speechSynthesis?.speak(utterance);
@@ -171,6 +186,7 @@ export function useTTS(text) {
         rate: rateRef.current, pitch: pitchRef.current, voice: voiceRef.current,
         charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
       });
+      if (!utterance) return;
       utteranceRef.current = utterance;
       window.speechSynthesis?.speak(utterance);
       setTtsState("speaking");
@@ -178,6 +194,7 @@ export function useTTS(text) {
   }, [ttsState, text, onEnd, onWordBoundary]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stop = useCallback(() => {
+    if (!TTS_AVAILABLE) return;
     nullHandlers();
     window.speechSynthesis?.cancel();
     utteranceRef.current  = null;
@@ -187,6 +204,7 @@ export function useTTS(text) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const restartFromCurrent = useCallback((newRate, newPitch, newVoice) => {
+    if (!TTS_AVAILABLE) return;
     nullHandlers();
     window.speechSynthesis?.cancel();
     const utterance = buildUtterance({
@@ -194,6 +212,7 @@ export function useTTS(text) {
       rate: newRate, pitch: newPitch, voice: newVoice,
       charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
     });
+    if (!utterance) return;
     utteranceRef.current = utterance;
     window.speechSynthesis?.speak(utterance);
     setTtsState("speaking");
@@ -204,6 +223,7 @@ export function useTTS(text) {
   // This is the primary resume mechanism on Android where onboundary is unreliable:
   // the user taps a word to start reading from exactly that position.
   const seekToWord = useCallback((charOffset, wordIdx) => {
+    if (!TTS_AVAILABLE) return;
     nullHandlers();
     window.speechSynthesis?.cancel();
     charIndexRef.current = charOffset;
@@ -213,6 +233,7 @@ export function useTTS(text) {
       rate: rateRef.current, pitch: pitchRef.current, voice: voiceRef.current,
       charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
     });
+    if (!utterance) return;
     utteranceRef.current = utterance;
     window.speechSynthesis?.speak(utterance);
     setTtsState("speaking");

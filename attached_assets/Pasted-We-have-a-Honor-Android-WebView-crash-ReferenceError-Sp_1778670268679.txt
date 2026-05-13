@@ -1,0 +1,39 @@
+We have a Honor Android WebView crash:
+
+ReferenceError: SpeechSynthesisUtterance is not defined
+
+This is the same class of bug as Lesson 13 in our project lessons — browser-only APIs must be guarded before use because some Android WebViews don't expose them.
+
+REQUIREMENTS:
+
+1. Find all uses of:
+   - SpeechSynthesisUtterance (especially `new SpeechSynthesisUtterance(...)`)
+   - window.speechSynthesis (any property access or method call)
+   - any other Web Speech API: speechSynthesis.getVoices(), .speak(), .cancel(), .pause(), .resume(), onvoiceschanged
+
+   These should mostly be in /src/features/tts/ but check the whole codebase.
+
+2. Apply this guard pattern:
+   - At the top of every function or useEffect that touches these APIs, return early if window.speechSynthesis is undefined OR window.SpeechSynthesisUtterance is undefined. Log a warning to console once so we know why TTS is inactive.
+   - Replace direct property access with optional chaining where it makes sense (e.g. window.speechSynthesis?.cancel()).
+   - For "new SpeechSynthesisUtterance(...)" — wrap it in a guard, OR move it inside a function that already checks for the API.
+
+3. Behaviour when APIs are missing:
+   - No crashes.
+   - The Read/Pause/Stop buttons should not throw errors when tapped.
+   - It's OK if they just do nothing for now — the proper fix is the Capacitor TTS plugin in Stage 5.3.
+
+4. Do NOT:
+   - Touch /src/features/scan/ or /src/features/ocr/
+   - Change settings/persistence code
+   - Add or remove dependencies
+   - Touch capacitor.config
+
+5. Run a production build (webDir is dist/public).
+
+6. At the end, show me:
+   - The list of files changed
+   - The full diff of any TTS file you changed
+   - Confirmation the build succeeded
+
+One concern: the original error stack shows the crash happens during React rendering, not just on button tap. So check whether SpeechSynthesisUtterance is being used in module-level code or at component-mount time outside of a guard — that's why it crashes before any button is even tapped.
