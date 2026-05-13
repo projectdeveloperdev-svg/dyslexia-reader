@@ -1,0 +1,44 @@
+We're starting Stage 5.2 — swap Tesseract.js OCR for native @capacitor-mlkit/text-recognition.
+
+The Scan and Upload buttons (already using @capacitor/camera) pass a base64 data URL into runOCR(). Replace the Tesseract internals of runOCR with ML Kit. The signature stays the same — string in, string out — so the rest of the app doesn't change.
+
+REQUIREMENTS:
+
+1. Install @capacitor-mlkit/text-recognition (latest compatible with our existing @capacitor/core 8.x).
+
+2. Remove tesseract.js completely:
+   - Uninstall the npm/pnpm dependency.
+   - Delete any Tesseract-specific files (worker setup, language data download, etc.).
+   - Remove any unused imports left behind.
+   - DO NOT keep Tesseract as a fallback. Git is the fallback.
+
+3. Rewrite /src/features/ocr/runOCR.js:
+   - Use TextRecognition from @capacitor-mlkit/text-recognition.
+   - Use the LATIN script model only (BarcodeScanner.recognize / TextRecognition.recognize — whatever the correct method is for the plugin's current API; check the docs).
+   - Input format: ML Kit usually wants a base64 string WITHOUT the "data:image/jpeg;base64," prefix. Strip the prefix before passing it in.
+   - Output: join the recognised text blocks/lines back into one string. Preserve line breaks where they exist, but don't double them up.
+   - Return the joined string. Same shape as before, so no callers change.
+
+4. Error handling (Lesson 2 — no silent failures):
+   - Wrap the recognise call in try/catch.
+   - If recognition succeeds but found no text → return empty string "" (callers already handle this — they show "No text found").
+   - If recognition throws → log the error to console AND re-throw so the existing UI error handler kicks in.
+
+5. Do NOT touch:
+   - /src/features/scan/ (Scan and Upload buttons stay as they are)
+   - /src/features/tts/ (TTS is a separate stage)
+   - Settings, persistence, fonts, colours
+   - capacitor.config (no plugin config needed unless ML Kit specifically requires it — if it does, tell me what you added and why)
+
+6. Run a production build (webDir is dist/public).
+
+7. At the end, show me:
+   - The full new runOCR.js
+   - The list of files deleted (Tesseract leftovers)
+   - The diff of package.json (added/removed dependencies)
+   - Any capacitor.config changes (if needed)
+   - Confirmation the build succeeded
+
+NOTE on iOS: I'm Android-only for now, but mention in your reply whether @capacitor-mlkit/text-recognition supports iOS — useful to know for the future.
+
+One thing at a time. ML Kit only. Do not write code for Camera or TTS — those are separate stages.
