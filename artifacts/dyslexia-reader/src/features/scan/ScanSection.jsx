@@ -77,9 +77,9 @@ function ScanSection() {
   useEffect(() => {
     if (voiceRestored.current || !voices.length) return;
     voiceRestored.current = true;
-    const savedName = localStorage.getItem("dexy-voice");
-    if (!savedName) return;
-    const saved = voices.find((v) => v.name === savedName);
+    const savedUri = localStorage.getItem("dexy-voice");
+    if (!savedUri) return;
+    const saved = voices.find((v) => v.voiceURI === savedUri);
     if (saved) changeVoice(saved);
   }, [voices]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -97,7 +97,7 @@ function ScanSection() {
   function handleChangeVoice(voice) {
     changeVoice(voice);
     try {
-      if (voice) localStorage.setItem("dexy-voice", voice.name);
+      if (voice) localStorage.setItem("dexy-voice", voice.voiceURI);
     } catch (e) { console.error("localStorage write failed:", e); }
   }
 

@@ -36,7 +36,7 @@ function ReadButton({
   const paused = ttsState === "paused";
 
   function handleVoiceChange(e) {
-    const voice = voices.find((v) => v.name === e.target.value) ?? null;
+    const voice = voices.find((v) => v.voiceURI === e.target.value) ?? null;
     changeVoice(voice);
   }
 
@@ -104,12 +104,12 @@ function ReadButton({
           <span className="speed-label">Voice</span>
           <select
             className="voice-select"
-            value={selectedVoice?.name ?? ""}
+            value={selectedVoice?.voiceURI ?? ""}
             onChange={handleVoiceChange}
           >
             {voices.map((v) => (
-              <option key={v.name} value={v.name}>
-                {v.name}
+              <option key={v.voiceURI} value={v.voiceURI}>
+                {v.name} ({v.lang})
               </option>
             ))}
           </select>

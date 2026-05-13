@@ -1,0 +1,70 @@
+ScanSection.jsx and ReadButton.jsx fix. Do these and nothing else.
+
+ROOT CAUSE
+The Honor phone's native TTS engine returns 400+ voices, many sharing the same `name`. For example "Arabic " appears 9 times, "English United Kingdom" appears 13 times. ReadButton uses v.name as React key and select value, which breaks the dropdown on Android WebView. Fix: switch to voiceURI which is guaranteed unique.
+
+FIX 1 — ReadButton.jsx voice dropdown
+Currently:
+  function handleVoiceChange(e) {
+    const voice = voices.find((v) => v.name === e.target.value) ?? null;
+    changeVoice(voice);
+  }
+  ...
+  <select
+    className="voice-select"
+    value={selectedVoice?.name ?? ""}
+    onChange={handleVoiceChange}
+  >
+    {voices.map((v) => (
+      <option key={v.name} value={v.name}>
+        {v.name}
+      </option>
+    ))}
+  </select>
+
+Change to match by voiceURI for key + value + lookup. Keep the displayed label as the name plus the lang in brackets so similar voices are distinguishable:
+
+  function handleVoiceChange(e) {
+    const voice = voices.find((v) => v.voiceURI === e.target.value) ?? null;
+    changeVoice(voice);
+  }
+  ...
+  <select
+    className="voice-select"
+    value={selectedVoice?.voiceURI ?? ""}
+    onChange={handleVoiceChange}
+  >
+    {voices.map((v) => (
+      <option key={v.voiceURI} value={v.voiceURI}>
+        {v.name} ({v.lang})
+      </option>
+    ))}
+  </select>
+
+FIX 2 — ScanSection.jsx voice persistence
+Switch the dexy-voice localStorage key from storing v.name to storing v.voiceURI. Two places:
+
+(a) The voice restoration effect — currently matches by v.name:
+  const savedName = localStorage.getItem("dexy-voice");
+  if (!savedName) return;
+  const saved = voices.find((v) => v.name === savedName);
+  if (saved) changeVoice(saved);
+
+Change to match by voiceURI:
+  const savedUri = localStorage.getItem("dexy-voice");
+  if (!savedUri) return;
+  const saved = voices.find((v) => v.voiceURI === savedUri);
+  if (saved) changeVoice(saved);
+
+(b) handleChangeVoice — currently writes voice.name:
+  if (voice) localStorage.setItem("dexy-voice", voice.name);
+
+Change to write voice.voiceURI:
+  if (voice) localStorage.setItem("dexy-voice", voice.voiceURI);
+
+OUTPUT
+- Diff for each change, not the whole files.
+- Run a production build. Confirm success.
+- Confirm /src/features/scan/ScanButton, UploadButton, PasteInput, /src/features/ocr/, /src/features/tts/useTTS.js, /src/features/tts/WordText.jsx, capacitor.config — all untouched.
+
+DO NOT change anything else. No "while I was in there" tidy-ups, no improvements I didn't ask for.
