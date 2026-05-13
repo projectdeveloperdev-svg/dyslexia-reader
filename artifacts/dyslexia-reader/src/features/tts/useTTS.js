@@ -1,59 +1,63 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { TextToSpeech } from "@capacitor-community/text-to-speech";
 
-// Checked once at module load — some Android WebViews omit the Web Speech API entirely.
-const TTS_AVAILABLE =
-  typeof window !== "undefined" &&
-  "speechSynthesis" in window &&
-  "SpeechSynthesisUtterance" in window;
-
-if (!TTS_AVAILABLE) {
-  console.warn("[useTTS] Web Speech API not available on this device — TTS disabled.");
+// -----------------------------------------------------------------
+// Plugin availability guard (Lesson 13).
+//
+// On native Android  : routes through Android TTS engine + UtteranceProgressListener.
+// On web (Replit dev): uses the plugin's built-in Web Speech fallback, so dev
+//                      mode still works in a normal browser.
+// On Android WebViews that lack speechSynthesis (e.g. Honor): the *native* plugin
+//                      path bypasses the WebView entirely — this is the whole point
+//                      of this migration.
+//
+// pluginAvailable is false only if the plugin export is genuinely missing at
+// runtime (edge case: someone imports this outside a Capacitor context with no
+// web fallback). All plugin calls are also wrapped in try/catch individually.
+// -----------------------------------------------------------------
+let pluginAvailable = true;
+try {
+  if (!TextToSpeech || typeof TextToSpeech.speak !== "function") {
+    pluginAvailable = false;
+  }
+} catch {
+  pluginAvailable = false;
 }
 
-function filterVoices(all) {
-  const english = all.filter((v) => v.lang.startsWith("en"));
-  const preferred = english.filter((v) => /Google|Microsoft|Natural/i.test(v.name));
-  return preferred.length > 0 ? preferred : english;
-}
-
-function buildUtterance({ text, offset, rate, pitch, voice, charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary }) {
-  if (!TTS_AVAILABLE) return null;
-  const remaining = text.slice(offset);
-  const utterance = new SpeechSynthesisUtterance(remaining);
-  utterance.rate = rate;
-  utterance.pitch = pitch;
-  if (voice) utterance.voice = voice;
-  utteranceOffsetRef.current = offset;
-  utterance.onboundary = (e) => {
-    if (e.name !== "word") return;
-    const absChar = offset + e.charIndex;
-    charIndexRef.current = absChar;
-    onWordBoundary(absChar);
-  };
-  utterance.onend   = onEnd;
-  utterance.onerror = onEnd;
-  return utterance;
+if (!pluginAvailable) {
+  console.warn(
+    "[useTTS] @capacitor-community/text-to-speech is not callable — TTS disabled."
+  );
 }
 
 export function useTTS(text) {
-  const [ttsState,      setTtsState]      = useState("idle"); // idle | speaking | paused
+  const [ttsState,      setTtsState]      = useState("idle"); // "idle" | "speaking" | "paused"
   const [rate,          setRate]          = useState(1);
   const [pitch,         setPitch]         = useState(1);
   const [voices,        setVoices]        = useState([]);
   const [selectedVoice, setSelectedVoice] = useState(null);
   const [wordIndex,     setWordIndex]     = useState(-1);
 
-  const utteranceRef       = useRef(null);
-  const charIndexRef       = useRef(0);
-  const utteranceOffsetRef = useRef(0);
-  const rateRef            = useRef(1);
-  const pitchRef           = useRef(1);
-  const voiceRef           = useRef(null);
-  const wordsRef           = useRef([]); // [{start, end}] — updated when text changes
+  // ---- Refs (readable inside async callbacks without stale-closure issues) ----
+  const rateRef         = useRef(1);
+  const pitchRef        = useRef(1);
+  const voiceRef        = useRef(null);    // selectedVoice object
+  const voicesRef       = useRef([]);      // mirrors voices state
+  const textRef         = useRef(text);    // mirrors text prop
+  const charIndexRef    = useRef(0);       // absolute char position in the full text
+  const speakOffsetRef  = useRef(0);       // offset passed to the most recent speak() slice
+  const wordsRef        = useRef([]);      // [{start, end}] positions in the full text
+  const speakIdRef      = useRef(0);       // incremented each speak() to detect stale completions
+  const listenerRef     = useRef(null);    // onRangeStart PluginListenerHandle
+  const ttsStateRef     = useRef("idle");  // mirrors ttsState for use inside async callbacks
 
-  useEffect(() => { rateRef.current  = rate;          }, [rate]);
-  useEffect(() => { pitchRef.current = pitch;         }, [pitch]);
-  useEffect(() => { voiceRef.current = selectedVoice; }, [selectedVoice]);
+  // Keep all mirrors in sync.
+  useEffect(() => { textRef.current    = text;          }, [text]);
+  useEffect(() => { rateRef.current    = rate;          }, [rate]);
+  useEffect(() => { pitchRef.current   = pitch;         }, [pitch]);
+  useEffect(() => { voiceRef.current   = selectedVoice; }, [selectedVoice]);
+  useEffect(() => { voicesRef.current  = voices;        }, [voices]);
+  useEffect(() => { ttsStateRef.current = ttsState;     }, [ttsState]);
 
   // Recompute word char-offset table whenever text changes.
   useEffect(() => {
@@ -66,178 +70,228 @@ export function useTTS(text) {
     wordsRef.current = words;
   }, [text]);
 
-  // Null all handlers on the current utterance ref.
-  // Always call before cancel() to prevent stale onend/onerror callbacks from
-  // firing asynchronously on Android Chrome after cancel() or completion.
-  function nullHandlers() {
-    if (utteranceRef.current) {
-      utteranceRef.current.onend      = null;
-      utteranceRef.current.onerror    = null;
-      utteranceRef.current.onboundary = null;
-    }
-  }
-
-  // Called from onboundary — stable, reads wordsRef.current which is always current.
-  // On Android Chrome onboundary is not reliably fired; when it is not fired,
-  // wordIndex stays at its current value (graceful degradation — no highlight moves).
-  const onWordBoundary = useCallback((absChar) => {
-    const idx = wordsRef.current.findIndex(
-      (w) => absChar >= w.start && absChar < w.end
-    );
-    if (idx !== -1) setWordIndex(idx);
-  }, []); // wordsRef is a ref — no dep needed
-
-  // Load voices — must handle async population in Chrome/Android
+  // ------------------------------------------------------------------
+  // Voice loading.
+  // getSupportedVoices() returns voices from the native TTS engine on Android,
+  // or from speechSynthesis on web. Runs once on mount.
+  // Voice selection is persisted as a voiceURI string (survives list reordering).
+  // ------------------------------------------------------------------
   useEffect(() => {
-    if (!TTS_AVAILABLE) return;
+    if (!pluginAvailable) return;
 
-    function loadVoices() {
-      const all      = window.speechSynthesis?.getVoices() ?? [];
-      const filtered = filterVoices(all);
-      if (filtered.length === 0) return;
-      setVoices(filtered);
-      setSelectedVoice((prev) => {
-        if (prev) return prev;
-        voiceRef.current = filtered[0];
-        return filtered[0];
-      });
+    async function loadVoices() {
+      try {
+        const { voices: raw } = await TextToSpeech.getSupportedVoices();
+        if (!raw || raw.length === 0) return;
+
+        // Prefer English voices, fall back to all if none found.
+        const english  = raw.filter((v) => v.lang && v.lang.startsWith("en"));
+        const filtered = english.length > 0 ? english : raw;
+        setVoices(filtered);
+        voicesRef.current = filtered;
+
+        // Restore saved voice by URI so it survives list reordering.
+        const savedUri = localStorage.getItem("dexy-voice");
+        const found    = savedUri ? filtered.find((v) => v.voiceURI === savedUri) : null;
+        const initial  = found ?? filtered[0] ?? null;
+        setSelectedVoice(initial);
+        voiceRef.current = initial;
+      } catch (err) {
+        console.error("[useTTS] getSupportedVoices() failed:", err);
+      }
     }
 
     loadVoices();
-    window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
-    return () => {
-      window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
-    };
   }, []);
 
-  // Reset when text changes (new scan or paste)
+  // ------------------------------------------------------------------
+  // onRangeStart listener management.
+  //
+  // Fires on Android 8+ (API 26+). Silent on older Android — highlighting
+  // just won't advance (graceful degradation). iOS is NOT supported by this
+  // plugin version; onRangeStart is Android-only here (issue #153 open upstream).
+  //
+  // IMPORTANT: `start` from the event is an offset into the TEXT SLICE passed
+  // to speak(), not into the full text. Adding speakOffsetRef.current converts
+  // it to an absolute position in the original text.
+  // ------------------------------------------------------------------
+  function removeRangeListener() {
+    if (listenerRef.current) {
+      listenerRef.current.remove().catch(() => {});
+      listenerRef.current = null;
+    }
+  }
+
+  async function attachRangeListener() {
+    removeRangeListener();
+    try {
+      const handle = await TextToSpeech.addListener(
+        "onRangeStart",
+        ({ start }) => {
+          const absChar = speakOffsetRef.current + start;
+          charIndexRef.current = absChar;
+
+          const idx = wordsRef.current.findIndex(
+            (w) => absChar >= w.start && absChar < w.end
+          );
+          if (idx !== -1) setWordIndex(idx);
+        }
+      );
+      listenerRef.current = handle;
+    } catch (err) {
+      console.error("[useTTS] addListener(onRangeStart) failed:", err);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Core speak dispatcher.
+  // Uses only refs so it never needs to be recreated (stable reference).
+  // `offset` is the absolute char position in the full text to start from.
+  // ------------------------------------------------------------------
+  const doSpeak = useCallback(async (offset) => {
+    const id   = ++speakIdRef.current;
+    const text = textRef.current;
+
+    speakOffsetRef.current = offset;
+    charIndexRef.current   = offset;
+
+    // Map selected voice object → numeric index (what speak() requires).
+    // Sorted order is guaranteed stable by the plugin (alphabetical by voiceURI).
+    const allVoices  = voicesRef.current;
+    const voiceIndex = voiceRef.current
+      ? allVoices.findIndex((v) => v.voiceURI === voiceRef.current.voiceURI)
+      : -1;
+
+    const options = {
+      text:   text.slice(offset),
+      lang:   voiceRef.current?.lang ?? "en-US",
+      rate:   rateRef.current,
+      pitch:  pitchRef.current,
+      volume: 1.0,
+      ...(voiceIndex >= 0 ? { voice: voiceIndex } : {}),
+    };
+
+    await attachRangeListener();
+
+    try {
+      // speak() resolves on natural completion. If stop() is called while
+      // speaking, the plugin clears the request internally and this promise
+      // never settles — that is intentional (we handle state manually in stop()).
+      await TextToSpeech.speak(options);
+
+      // Natural completion — only process if this speak session is still current.
+      if (speakIdRef.current === id) {
+        removeRangeListener();
+        charIndexRef.current = 0;
+        setWordIndex(-1);
+        setTtsState("idle");
+      }
+    } catch (err) {
+      if (speakIdRef.current === id) {
+        console.error("[useTTS] speak() failed:", err);
+        removeRangeListener();
+        setWordIndex(-1);
+        setTtsState("idle");
+      }
+    }
+  }, []); // stable — reads everything via refs // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ------------------------------------------------------------------
+  // Reset on text change (new scan / paste).
+  // ------------------------------------------------------------------
   useEffect(() => {
-    nullHandlers();
-    window.speechSynthesis?.cancel();
-    setTtsState("idle");
+    if (ttsStateRef.current !== "idle") {
+      try { TextToSpeech.stop(); } catch { /* ignore */ }
+    }
+    removeRangeListener();
+    speakIdRef.current++;
+    charIndexRef.current   = 0;
+    speakOffsetRef.current = 0;
     setWordIndex(-1);
-    charIndexRef.current  = 0;
-    utteranceRef.current  = null;
+    setTtsState("idle");
   }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Cleanup on unmount
+  // Cleanup on unmount.
   useEffect(() => {
     return () => {
-      nullHandlers();
-      window.speechSynthesis?.cancel();
+      removeRangeListener();
+      speakIdRef.current++;
+      try { TextToSpeech.stop(); } catch { /* ignore */ }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onEnd = useCallback((e) => {
-    if (!TTS_AVAILABLE) return;
-    // Null handlers via the event target (precise — avoids stale ref issues if
-    // this fires for an older utterance after a new one was already queued).
-    if (e && e.target) {
-      e.target.onend      = null;
-      e.target.onerror    = null;
-      e.target.onboundary = null;
-    }
-    // Cancel explicitly after natural completion.
-    // On Android Chrome the speech queue is not reliably cleared when onend fires,
-    // which causes the utterance to restart from the beginning.
-    window.speechSynthesis?.cancel();
-    charIndexRef.current = 0;
-    utteranceRef.current = null;
-    setWordIndex(-1);
-    setTtsState("idle");
-  }, []);
-
+  // ------------------------------------------------------------------
+  // toggle: idle → speaking | speaking → paused | paused → speaking.
+  //
+  // Pause is faked (plugin has no pause()): we call stop() and remember the
+  // last absolute char position. Resume calls speak() from that position.
+  // The gap between stopping and restarting is audible but brief — accepted
+  // trade-off given Android TTS engine limitations.
+  // ------------------------------------------------------------------
   const toggle = useCallback(() => {
-    if (!TTS_AVAILABLE) return;
+    if (!pluginAvailable) return;
+
     if (ttsState === "idle") {
-      // Null handlers on any previous (completed) utterance before calling cancel().
-      // On Android Chrome, cancel() can fire onend/onerror on a completed utterance
-      // whose handlers are still set, causing a stale setTtsState("idle") to race
-      // against the setTtsState("speaking") below.
-      nullHandlers();
-      charIndexRef.current = 0;
-      const utterance = buildUtterance({
-        text, offset: 0,
-        rate: rateRef.current, pitch: pitchRef.current, voice: voiceRef.current,
-        charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
-      });
-      if (!utterance) return;
-      utteranceRef.current = utterance;
-      window.speechSynthesis?.cancel();
-      window.speechSynthesis?.speak(utterance);
+      charIndexRef.current   = 0;
+      speakOffsetRef.current = 0;
       setTtsState("speaking");
+      doSpeak(0);
 
     } else if (ttsState === "speaking") {
-      window.speechSynthesis?.pause();
+      // Fake pause: capture last known word position, then stop.
+      const resumeAt = charIndexRef.current;
+      try { TextToSpeech.stop(); } catch (err) { console.error("[useTTS] stop() failed:", err); }
+      removeRangeListener();
+      speakIdRef.current++;       // prevent stale completion handler
+      charIndexRef.current = resumeAt;
       setTtsState("paused");
 
     } else if (ttsState === "paused") {
-      // speechSynthesis.resume() is unreliable on Android Chrome — it silently
-      // does nothing after pause(). Workaround: cancel the paused utterance and
-      // rebuild it from the last tracked character position (charIndexRef.current).
-      // Note: onboundary events are not reliably fired on Android Chrome, so
-      // charIndexRef.current may be 0. This means Resume can restart from the
-      // beginning of the text rather than the exact pause point — accepted
-      // trade-off, not a bug. Tap-to-word is the primary resume UX on Android.
-      nullHandlers();
-      window.speechSynthesis?.cancel();
-      const utterance = buildUtterance({
-        text, offset: charIndexRef.current,
-        rate: rateRef.current, pitch: pitchRef.current, voice: voiceRef.current,
-        charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
-      });
-      if (!utterance) return;
-      utteranceRef.current = utterance;
-      window.speechSynthesis?.speak(utterance);
+      // Resume from last known position.
+      const offset = charIndexRef.current;
       setTtsState("speaking");
+      doSpeak(offset);
     }
-  }, [ttsState, text, onEnd, onWordBoundary]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ttsState, doSpeak]);
 
   const stop = useCallback(() => {
-    if (!TTS_AVAILABLE) return;
-    nullHandlers();
-    window.speechSynthesis?.cancel();
-    utteranceRef.current  = null;
-    charIndexRef.current  = 0;
+    if (!pluginAvailable) return;
+    try { TextToSpeech.stop(); } catch (err) { console.error("[useTTS] stop() failed:", err); }
+    removeRangeListener();
+    speakIdRef.current++;
+    charIndexRef.current   = 0;
+    speakOffsetRef.current = 0;
     setWordIndex(-1);
     setTtsState("idle");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Restart mid-utterance after settings change (rate, pitch, voice).
   const restartFromCurrent = useCallback((newRate, newPitch, newVoice) => {
-    if (!TTS_AVAILABLE) return;
-    nullHandlers();
-    window.speechSynthesis?.cancel();
-    const utterance = buildUtterance({
-      text, offset: charIndexRef.current,
-      rate: newRate, pitch: newPitch, voice: newVoice,
-      charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
-    });
-    if (!utterance) return;
-    utteranceRef.current = utterance;
-    window.speechSynthesis?.speak(utterance);
+    if (!pluginAvailable) return;
+    rateRef.current  = newRate;
+    pitchRef.current = newPitch;
+    voiceRef.current = newVoice;
+    try { TextToSpeech.stop(); } catch { /* ignore */ }
+    removeRangeListener();
+    speakIdRef.current++;
+    const offset = charIndexRef.current;
     setTtsState("speaking");
-  }, [text, onEnd, onWordBoundary]);
+    doSpeak(offset);
+  }, [doSpeak]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Seek to a specific word by character offset and word index.
   // Works from idle, speaking, or paused — always transitions to speaking.
-  // This is the primary resume mechanism on Android where onboundary is unreliable:
-  // the user taps a word to start reading from exactly that position.
+  // This is the primary tap-to-resume mechanism on Android.
   const seekToWord = useCallback((charOffset, wordIdx) => {
-    if (!TTS_AVAILABLE) return;
-    nullHandlers();
-    window.speechSynthesis?.cancel();
+    if (!pluginAvailable) return;
+    try { TextToSpeech.stop(); } catch { /* ignore */ }
+    removeRangeListener();
+    speakIdRef.current++;
     charIndexRef.current = charOffset;
     setWordIndex(wordIdx);
-    const utterance = buildUtterance({
-      text, offset: charOffset,
-      rate: rateRef.current, pitch: pitchRef.current, voice: voiceRef.current,
-      charIndexRef, utteranceOffsetRef, onEnd, onWordBoundary,
-    });
-    if (!utterance) return;
-    utteranceRef.current = utterance;
-    window.speechSynthesis?.speak(utterance);
     setTtsState("speaking");
-  }, [text, onEnd, onWordBoundary]); // eslint-disable-line react-hooks/exhaustive-deps
+    doSpeak(charOffset);
+  }, [doSpeak]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const changeRate = useCallback((newRate) => {
     setRate(newRate);

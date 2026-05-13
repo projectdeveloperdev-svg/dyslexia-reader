@@ -1,0 +1,63 @@
+We're doing Stage 5.3 — replace the browser-based useTTS.js with @capacitor-community/text-to-speech (native Android TTS via UtteranceProgressListener).
+
+CONTEXT (do not skip):
+- Honor WebView lacks SpeechSynthesisUtterance entirely. Browser TTS does nothing on Android.
+- The current useTTS.js was guarded in an earlier step (Lesson 13) — TTS_AVAILABLE check returns early. That guard needs to be replaced, not preserved, since we're swapping the engine.
+- Two features depend on TTS:
+  1. Word-by-word highlighting (currently uses browser `boundary` event with charIndex)
+  2. Tap-to-resume from a specific word
+- The new plugin emits an `onRangeStart` event on Android 8+ (API 26+) with { start, end, spokenWord }. `start` maps 1:1 to the old charIndex.
+- The new plugin has NO pause() or resume(). Only stop(). Pause/resume must be faked by tracking the last `start` value, calling stop(), then speak({ text: fullText.slice(lastStart) }).
+
+REQUIREMENTS:
+
+1. Install @capacitor-community/text-to-speech (version 8.0.0 or latest compatible with @capacitor/core 8.3.3).
+
+2. Rewrite /src/features/tts/useTTS.js completely:
+   - Import { TextToSpeech } from '@capacitor-community/text-to-speech' (verify exact export name from definitions.ts).
+   - Replace TTS_AVAILABLE with a plugin-availability check (TextToSpeech is defined and on Android — Capacitor.getPlatform() === 'android' OR availability through the plugin itself).
+   - speak(): call TextToSpeech.speak({ text, lang, rate, pitch, volume, voice }).
+   - stop(): call TextToSpeech.stop().
+   - Word highlighting: register an onRangeStart listener via TextToSpeech.addListener('onRangeStart', ({ start, end, spokenWord }) => { ... }). Use `start` exactly where the old code used charIndex. Keep the listener handle and remove it on cleanup (useEffect return).
+   - Pause: implement as { stop() + remember last `start` offset }. Set an isPaused state. When resume is called, call speak({ text: fullText.slice(lastStart) }) and continue. When the user resumes, the `start` values from the new utterance are offsets into the SLICE — adjust by adding lastStart back when reporting position to the rest of the app, so highlighting tracking stays absolute.
+   - Tap-to-resume on a word: same as pause+resume — find the tapped word's character offset, stop, speak from offset.
+   - Voice list: use TextToSpeech.getSupportedVoices(). Returns { voices: [{ name, lang, voiceURI, default, localService }] }. Update the voice dropdown component to use this shape.
+   - Keep the exported hook API identical to the existing useTTS — whatever the consumer components import (e.g. play, pause, stop, isPlaying, currentWordIndex, voices, setVoice, etc.) — same names, same shapes. Do not break consumers.
+
+3. Settings persistence (localStorage):
+   - DO NOT change the localStorage keys.
+   - Saved rate, pitch, volume map directly (same 1.0 default scale).
+   - Saved voice was previously stored as a voiceURI string. The new plugin's speak() takes a voice INDEX into the getSupportedVoices() array, not a URI. So: on load, after voices populate, find the index of the saved voiceURI in the new voice list. If not found, default to 0. Store the URI, not the index, so it survives voice list reordering.
+
+4. Error handling (Lesson 2 — no silent failures):
+   - Wrap every plugin call in try/catch.
+   - On error: console.error with prefix "[useTTS]", do NOT swallow.
+   - If a method fails (e.g. permission denied, engine missing), the UI should still be usable — the Read button should error visibly, not freeze.
+
+5. Lesson 13 — guard against the plugin not being there:
+   - On native iOS this plugin works too. On web (dev mode in Replit) it won't.
+   - At module top: detect if the plugin is callable. If not (e.g. running in plain web preview), keep all functions stub-safe (early return, log once). Don't crash.
+
+6. Do NOT touch:
+   - /src/features/scan/ (Camera plugin code)
+   - /src/features/ocr/ (just switched to ML Kit)
+   - Settings UI components (only the persistence values — keys stay the same)
+   - capacitor.config UNLESS the plugin requires it (mention if so)
+
+7. Run a production build (webDir is dist/public).
+
+8. At the end, show me:
+   - The full new useTTS.js
+   - The diff of any other file in /src/features/tts/ (e.g. voice dropdown component that consumes getSupportedVoices)
+   - The list of files changed
+   - The diff of package.json
+   - Any capacitor.config changes (only if needed)
+   - Confirmation the build succeeded
+   - Confirmation that /src/features/scan/ and /src/features/ocr/ are NOT touched
+
+WARNINGS:
+- The plugin only fires onRangeStart on Android 8+ (API 26+). If the test phone is older, highlighting silently won't update. Honor phones today are well past API 26 so this is fine, but document this in code comments.
+- onRangeStart fires on Android only; iOS doesn't get word events from this plugin. For now Android-only — comment this in code so we remember when we revisit iOS.
+- Do NOT preserve the old browser TTS as a fallback. Strip it cleanly.
+
+One thing at a time. TTS only. Do not touch OCR, Scan, Upload, or Settings UI logic.
