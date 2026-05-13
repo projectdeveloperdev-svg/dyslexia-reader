@@ -1,0 +1,39 @@
+RESEARCH ONLY — do not install anything, do not change any files, do not write code, do not run a build.
+
+We need a better OCR solution for our React/Capacitor 8.3.3 Android app. Tesseract.js works but is inaccurate and slow. We've already ruled out:
+- @capacitor-mlkit/text-recognition (sponsorware, may revisit)
+- @capacitor-mlkit/document-scanner (returns images only, not text)
+
+I'm willing to pay for the right solution. Help me find one.
+
+INVESTIGATE THESE 5 PATHS:
+
+1. @capacitor-mlkit/text-recognition (sponsorware) — what we'd actually be paying for:
+   - What sponsorship tier on GitHub Sponsors unlocks access? (Confirm the price.)
+   - How is the package delivered (GitHub Packages? private npm? token in .npmrc?)
+   - Is there a public API reference? Any usage examples on the web?
+   - Search GitHub issues / Stack Overflow / Reddit for real-world reports — does it work? Any common bugs with Capacitor 8.x?
+   - Is the project actively maintained? When was the last release?
+   - Who maintains it (capawesome team — credible? widely used?)
+
+2. Cloud OCR APIs we could call from the Capacitor app (would need internet):
+   - Google Cloud Vision (text detection) — pricing, free tier, accuracy reputation
+   - Microsoft Azure AI Vision (Read API) — same questions
+   - OCR.space — same questions
+   - AWS Textract — same questions
+   - For each: pricing per call, free tier limits, accuracy comparison, ease of use from JavaScript, whether the API key can be safely shipped in a mobile app or must be proxied
+
+3. Other Capacitor OCR plugins (free or paid) — any we haven't discovered yet on npm or GitHub? Search npm for "capacitor ocr", "capacitor text recognition", and check what comes up.
+
+4. Native Android approach — could we write a small custom Capacitor plugin that wraps Google's free ML Kit text recognition library directly (the one capawesome's sponsorware just wraps)? How much work is that, realistically? Pros and cons.
+
+5. Tesseract.js tuning — could the current Tesseract setup be improved (different language data, preprocessing of the image, better settings) to reduce hallucination — without changing the engine? List concrete improvements you'd try.
+
+OUTPUT FORMAT:
+- One short section per path. No fluff.
+- Quote / link the exact source for any factual claim (price, GitHub URL, API doc).
+- For each path, rate it on three things: cost, effort to integrate, expected OCR quality.
+- End with a clear recommendation: if you had to pick one for a £0-budget-but-willing-to-pay-£15-month-if-needed personal project, which one would you pick and why?
+- If anything is unclear from the docs, say so plainly. Don't guess.
+- DO NOT install anything.
+- DO NOT change files.
