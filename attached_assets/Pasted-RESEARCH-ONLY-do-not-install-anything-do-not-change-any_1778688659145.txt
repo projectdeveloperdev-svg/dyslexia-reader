@@ -1,0 +1,54 @@
+RESEARCH ONLY — do not install anything, do not change any files, do not run a build.
+
+We need to replace browser-based TTS with a native Capacitor TTS plugin. We're on @capacitor/core 8.3.3, Android. Honor WebView is confirmed to lack SpeechSynthesisUtterance entirely, so the current TTS does nothing.
+
+The critical question is whether the plugin we choose will let us keep two features the current browser TTS supports:
+- Word-by-word highlighting (browser uses the `boundary` event)
+- Tap-to-resume from a specific word (depends on knowing the current word position)
+
+ANSWER THESE 6 QUESTIONS:
+
+1. Plugin candidates — list every actively maintained Capacitor TTS plugin you can find. For each, give:
+   - Package name and latest version
+   - Maintainer (and credibility — Capacitor core team / community / unknown)
+   - Compatibility with @capacitor/core 8.x
+   - Free or paid
+   - iOS support (yes/no, useful to know)
+
+2. For the leading candidate (likely @capacitor-community/text-to-speech), drill in:
+   - Full API surface — speak(), pause(), resume(), stop(), getVoices(), setLanguage(), setRate(), setPitch(), etc. List every method.
+   - Does it fire word-level progress events on Android? Specifically: does it emit something equivalent to the browser's `boundary` event, with character/word position? Read the plugin's definitions.ts / README / source. If unclear, say "docs don't say."
+   - If it does fire word events: what's the event name, what data does it include (start index, word, sentence index)?
+   - Does it support pause/resume mid-utterance, or only stop and restart?
+   - How does its voice list work — getVoices() returns an array of what?
+   - What's the rate range (0.0–2.0 like the browser? Different scale?)
+
+3. Search GitHub issues / Stack Overflow / Reddit for any of:
+   - "capacitor-community text-to-speech boundary"
+   - "capacitor tts word highlight"
+   - "android tts UtteranceProgressListener onRangeStart"
+   - Any reports of word-level callbacks working or not working on Android
+   - Common bugs / known limitations
+
+4. Android native TTS capability: Android's UtteranceProgressListener has onRangeStart(utteranceId, start, end) which fires per word, available since API 26. Confirm this. Does the leading Capacitor plugin expose this to JavaScript, or does it ignore the native callback?
+
+5. Alternative plugins — if @capacitor-community/text-to-speech does NOT expose word events:
+   - Does any other Capacitor plugin do it?
+   - Could we write a tiny custom Capacitor plugin that wraps Android's UtteranceProgressListener properly? Estimate the effort.
+   - Cloud TTS options (Google Cloud TTS, Azure, Amazon Polly) — same proxy/key concerns as the OCR research; do any of them support word timings (e.g. SSML <mark> or word-timepoint metadata)? Mention briefly, not in depth.
+
+6. Risk to existing features — based on findings, rate the likelihood of each:
+   - Read button works after swap: high/medium/low
+   - Word-by-word highlighting survives: high/medium/low
+   - Tap-to-resume on a word survives: high/medium/low
+   - Pause/Resume works: high/medium/low
+   - Voice dropdown still shows multiple voices on the Honor: high/medium/low
+
+OUTPUT FORMAT:
+- One short section per question, no fluff.
+- Cite/link the exact source for each factual claim.
+- If anything is unclear from the docs, say "docs don't say" plainly. Don't guess.
+- End with a clear recommendation: which plugin to use, and what we should expect to lose vs keep.
+- DO NOT install anything.
+- DO NOT change files.
+- DO NOT run a build.
