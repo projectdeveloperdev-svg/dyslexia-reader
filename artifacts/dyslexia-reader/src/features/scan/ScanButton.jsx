@@ -1,45 +1,39 @@
-import { useRef } from "react";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { runOCR } from "../ocr/runOCR";
 import "./ScanButton.css";
 
 function ScanButton({ onLoading, onResult, onError, onReset }) {
-  const inputRef = useRef(null);
+  async function handleClick() {
+    let photo;
+    try {
+      photo = await Camera.getPhoto({
+        source: CameraSource.Camera,
+        resultType: CameraResultType.DataUrl,
+        quality: 90,
+        allowEditing: false,
+      });
+    } catch (e) {
+      if (/cancel|no image picked/i.test(e?.message ?? "")) return;
+      console.error("Camera error:", e);
+      onError();
+      return;
+    }
 
-  function handleClick() {
     onReset();
-    inputRef.current.click();
-  }
-
-  async function handleCapture(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    e.target.value = "";
     onLoading();
     try {
-      const extracted = await runOCR(url);
+      const extracted = await runOCR(photo.dataUrl);
       onResult(extracted);
-    } catch {
+    } catch (e) {
+      console.error("OCR error:", e);
       onError();
-    } finally {
-      URL.revokeObjectURL(url);
     }
   }
 
   return (
-    <>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleCapture}
-        style={{ display: "none" }}
-      />
-      <button className="scan-btn" onClick={handleClick}>
-        Scan
-      </button>
-    </>
+    <button className="scan-btn" onClick={handleClick}>
+      Scan
+    </button>
   );
 }
 
