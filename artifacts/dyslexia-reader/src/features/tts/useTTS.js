@@ -79,10 +79,26 @@ export function useTTS(text) {
   useEffect(() => {
     if (!pluginAvailable) return;
 
-    async function loadVoices() {
+    let cancelled = false;
+    const delays = [500, 1000, 2000];
+
+    async function tryLoadVoices(attempt) {
+      if (cancelled) return;
       try {
         const { voices: raw } = await TextToSpeech.getSupportedVoices();
-        if (!raw || raw.length === 0) return;
+        if (cancelled) return;
+        if (!raw || raw.length === 0) {
+          // Engine returned empty list — retry if we have attempts left.
+          // Happens on Android when the TTS engine hasn't finished initialising
+          // its voice set (upstream issue #104 / #14).
+          if (attempt < delays.length) {
+            console.warn(`[useTTS] No voices returned, retrying in ${delays[attempt]}ms`);
+            setTimeout(() => tryLoadVoices(attempt + 1), delays[attempt]);
+          } else {
+            console.warn("[useTTS] No voices returned after all retries — voice dropdown will not render.");
+          }
+          return;
+        }
 
         // Show all voices. Persistence and restoration is handled entirely by
         // ScanSection (reads/writes dexy-voice via changeVoice). Here we only
@@ -96,11 +112,17 @@ export function useTTS(text) {
         setSelectedVoice(initial);
         voiceRef.current = initial;
       } catch (err) {
-        console.error("[useTTS] getSupportedVoices() failed:", err);
+        console.error(`[useTTS] getSupportedVoices() attempt ${attempt + 1} failed:`, err);
+        if (attempt < delays.length) {
+          setTimeout(() => tryLoadVoices(attempt + 1), delays[attempt]);
+        } else {
+          console.error("[useTTS] All voice loading attempts failed — voice dropdown will not render.");
+        }
       }
     }
 
-    loadVoices();
+    tryLoadVoices(0);
+    return () => { cancelled = true; };
   }, []);
 
   // ------------------------------------------------------------------

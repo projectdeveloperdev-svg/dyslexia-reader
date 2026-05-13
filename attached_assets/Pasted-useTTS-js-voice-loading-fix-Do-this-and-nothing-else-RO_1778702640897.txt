@@ -1,0 +1,81 @@
+useTTS.js voice loading fix. Do this and nothing else.
+
+ROOT CAUSE
+@capacitor-community/text-to-speech 8.0.0 has a known race condition on Android: getSupportedVoices() can crash with "Attempt to invoke interface method 'java.util.Iterator java.util.Set.iterator()' on a null object reference" when the Android TTS engine hasn't finished initialising its voice list yet. The plugin doesn't guard against this internally. Confirmed in upstream issues #14 and #104.
+
+Symptom: on some boots voices load fine (400+ voices). On other boots the call crashes, voices state stays empty, and the entire Voice dropdown is not rendered (ReadButton gates it on voices.length > 0).
+
+FIX — Retry with backoff in useTTS.js loadVoices()
+
+Current code (around line 75 in useTTS.js):
+
+  async function loadVoices() {
+    try {
+      const { voices: raw } = await TextToSpeech.getSupportedVoices();
+      if (!raw || raw.length === 0) return;
+
+      setVoices(raw);
+      voicesRef.current = raw;
+
+      const englishMatch = raw.find((v) => v.lang && v.lang.startsWith("en"));
+      const initial = englishMatch ?? raw[0] ?? null;
+      setSelectedVoice(initial);
+      voiceRef.current = initial;
+    } catch (err) {
+      console.error("[useTTS] getSupportedVoices() failed:", err);
+    }
+  }
+
+  loadVoices();
+
+Change to retry on failure. Up to 3 attempts. Delays: 500ms, 1000ms, 2000ms. Cancel pending retries if the component unmounts.
+
+  let cancelled = false;
+  const delays = [500, 1000, 2000];
+
+  async function tryLoadVoices(attempt) {
+    if (cancelled) return;
+    try {
+      const { voices: raw } = await TextToSpeech.getSupportedVoices();
+      if (cancelled) return;
+      if (!raw || raw.length === 0) {
+        // Engine returned empty list — retry if we have attempts left.
+        if (attempt < delays.length) {
+          console.warn(`[useTTS] No voices returned, retrying in ${delays[attempt]}ms`);
+          setTimeout(() => tryLoadVoices(attempt + 1), delays[attempt]);
+        } else {
+          console.warn("[useTTS] No voices returned after all retries — voice dropdown will not render.");
+        }
+        return;
+      }
+
+      setVoices(raw);
+      voicesRef.current = raw;
+
+      const englishMatch = raw.find((v) => v.lang && v.lang.startsWith("en"));
+      const initial = englishMatch ?? raw[0] ?? null;
+      setSelectedVoice(initial);
+      voiceRef.current = initial;
+    } catch (err) {
+      console.error(`[useTTS] getSupportedVoices() attempt ${attempt + 1} failed:`, err);
+      if (attempt < delays.length) {
+        setTimeout(() => tryLoadVoices(attempt + 1), delays[attempt]);
+      } else {
+        console.error("[useTTS] All voice loading attempts failed — voice dropdown will not render.");
+      }
+    }
+  }
+
+  tryLoadVoices(0);
+
+  // Add a cleanup return at the end of the useEffect to set cancelled = true:
+  return () => { cancelled = true; };
+
+The useEffect this lives inside is the existing voice-loading useEffect that runs once on mount (currently has dependency array []). Just update the function body and add the cleanup return.
+
+OUTPUT
+- Diff for the change, not the whole file.
+- Run a production build. Confirm success.
+- Confirm /src/features/scan/, /src/features/ocr/, /src/features/tts/ReadButton.jsx, /src/features/tts/WordText.jsx, capacitor.config.ts — all untouched.
+
+DO NOT change anything else. No "while I was in there" tidy-ups, no improvements I didn't ask for.
