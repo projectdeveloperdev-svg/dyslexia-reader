@@ -1,0 +1,45 @@
+We're doing Stage 5.2 — swap Tesseract.js for @jcesarmobile/capacitor-ocr.
+
+The Scan and Upload buttons already use @capacitor/camera and pass a base64 data URL (e.g. "data:image/jpeg;base64,...") into runOCR(). The plugin accepts data URLs directly with no stripping needed.
+
+REQUIREMENTS:
+
+1. Install @jcesarmobile/capacitor-ocr (version 0.3.0 or latest compatible with our @capacitor/core 8.3.3).
+
+2. Remove tesseract.js completely:
+   - Uninstall the dependency from package.json.
+   - Delete any Tesseract-specific files in /src/features/ocr/ (worker setup, language data download helpers, etc.).
+   - Remove all unused imports left behind.
+   - Do NOT keep Tesseract as a fallback.
+
+3. Rewrite /src/features/ocr/runOCR.js:
+   - Import { OCR } from '@jcesarmobile/capacitor-ocr' (verify the exact import name from the plugin's definitions.ts — adjust if different).
+   - Call: const { results } = await OCR.process({ image: dataUrl });
+   - Join the results into a single string. Each result is { text: string, confidence: number }. Concatenate the `text` fields with "\n" between them. (Newlines preserve paragraph structure for TTS later.)
+   - If results is empty or all texts are empty: return "" (callers already show "No text found").
+   - Return the joined string. Same signature as before — string in, string out — so callers don't change.
+
+4. Error handling (Lesson 2 — no silent failures):
+   - Wrap the OCR.process call in try/catch.
+   - On error: log to console with prefix "[runOCR]" AND re-throw so the existing UI error handler fires.
+   - On first-run model download failure (no network), the error will surface — that's correct behaviour, we don't want to hide it.
+
+5. Do NOT touch:
+   - /src/features/scan/ (Scan and Upload buttons stay as they are)
+   - /src/features/tts/
+   - Settings, persistence, fonts, colours
+   - capacitor.config UNLESS the plugin specifically requires it (mention if it does)
+
+6. Run a production build (webDir is dist/public).
+
+7. At the end, show me:
+   - The full new runOCR.js
+   - The list of files deleted (Tesseract leftovers)
+   - The diff of package.json (added @jcesarmobile/capacitor-ocr, removed tesseract.js + any related)
+   - Any capacitor.config changes (only if needed)
+   - Confirmation the build succeeded
+   - Confirmation that /src/features/scan/, /src/features/tts/, and settings code were NOT touched
+
+Note: this plugin is relatively new (v0.3.0, three releases). If during install you discover any compatibility issue with Capacitor 8.3.3, STOP and tell me before continuing — do NOT install a workaround or fallback without checking with me first.
+
+One thing at a time. OCR plugin only. Do not write code for TTS — that's Stage 5.3.
