@@ -1,0 +1,60 @@
+Goal: Improve the extracted text area in three ways. One feature, one prompt.
+
+Before writing code, tell me:
+1. Which files this will touch.
+2. Any risk to existing pause/resume/stop or settings persistence.
+3. A short 3-step plan.
+
+Wait for my approval before writing code.
+
+--- THE FEATURE ---
+
+The scan → OCR → display → TTS flow currently has three issues with the extracted text area:
+
+ISSUE 1 — OCR junk characters
+The OCR output contains stray characters that weren't really in the photo (stray punctuation, single letters, fake line breaks). These also cause the TTS engine to pause mid-sentence at fake sentence endings.
+
+Add a cleanup function that runs on the OCR output BEFORE it is displayed and BEFORE it is fed to the TTS engine.
+
+Rules for the cleanup function:
+- Collapse multiple spaces into one.
+- Collapse multiple newlines into a single newline.
+- Remove single non-letter, non-digit characters that are surrounded by spaces (e.g. " . ", " | ", " ; "). Keep punctuation that's attached to words.
+- Remove lines that are 1 or 2 characters long (almost always OCR noise).
+- Strip leading and trailing whitespace from each line.
+- Replace single newlines INSIDE a paragraph (line wraps in the original photo) with a space, so sentences aren't broken mid-flow. Keep double newlines as real paragraph breaks.
+- DO NOT remove or alter real words. If in doubt, keep the character.
+
+Put this function in /src/features/ocr/cleanText.js so it's easy to find and tweak later.
+
+Apply the cleanup once, right after OCR finishes, before storing the text in state.
+
+ISSUE 2 — Text not editable
+After the cleanup runs, the user should be able to tap the text and edit it to fix anything the cleanup missed.
+
+- Use a textarea (or contentEditable div) for the extracted text box.
+- Pre-fill it with the cleaned OCR output.
+- When the user types, update the state immediately.
+- The Read button reads the CURRENT text (including any edits), not the original OCR output.
+- Editing must NOT interfere with Read / Pause / Resume / Stop / speed / pitch / voice.
+
+ISSUE 3 — Text doesn't use the screen well
+On mobile the text box is too narrow, and when text is short it sits cramped in the middle.
+
+- Make the text box fill the available width with comfortable side margins (around 16-20px each side).
+- Text should be left-aligned (not centered).
+- The box should grow with content but have a sensible minimum height so short text doesn't look lost.
+- Test on mobile width specifically — the Replit mobile preview is the reference.
+
+--- RULES ---
+
+- One feature only. Do not add anything I didn't ask for (no new buttons, no extra settings, no styling tweaks elsewhere).
+- Do not touch the TTS plugin code, settings persistence (dexy-speed / dexy-pitch / dexy-voice), or the camera/OCR plugins themselves.
+- Do not break the word-by-word highlighting that works on Honor.
+- Do not add an English-only filter or any other silent scope change (this caught us last session).
+- Use clear names. Small functions. No silent failures — log errors.
+
+After writing code, give me a status update:
+- ✅ What you did
+- ⚠️ What might be at risk
+- ➡️ What I should test on the phone
