@@ -5,6 +5,7 @@ import PasteInput from "./PasteInput";
 import ReadButton from "../tts/ReadButton";
 import WordText from "../tts/WordText";
 import { useTTS } from "../tts/useTTS";
+import { cleanText } from "../ocr/cleanText";
 import "./ScanSection.css";
 
 function ScanSection() {
@@ -136,7 +137,7 @@ function ScanSection() {
     if (!extracted) {
       setStatus("error");
     } else {
-      setText(extracted);
+      setText(cleanText(extracted));
       setStatus("done");
       if (autoRead) autoReadPendingRef.current = true;
     }
@@ -199,6 +200,7 @@ function ScanSection() {
                 className="ocr-edit-textarea"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
+                onBlur={handleEditDone}
                 style={{ "--ocr-font-size": `${fontSize}px`, fontFamily, "--ocr-bg-rgb": bgColour, "--ocr-bg-opacity": bgOpacity }}
               />
             ) : (

@@ -29,15 +29,17 @@
   --ocr-font-size: 1.375rem; /* 22px default — Phase 5.3 will override via inline style */
   width: 100%;
   max-width: 640px;
+  box-sizing: border-box;
   --ocr-bg-rgb: 255, 255, 255;
   --ocr-bg-opacity: 1;
   background: rgba(var(--ocr-bg-rgb), var(--ocr-bg-opacity));
   border: 2px solid #e0e0e0;
   border-radius: 12px;
-  padding: 1.25rem 2rem;
+  padding: 1.25rem 1rem;
   font-size: var(--ocr-font-size);
   line-height: 1.6;
   color: #1a1a1a;
+  text-align: left;
   white-space: pre-wrap;
   word-break: break-word;
   min-height: 120px;
@@ -56,15 +58,15 @@
   background: rgba(var(--ocr-bg-rgb, 255, 255, 255), var(--ocr-bg-opacity, 1));
   border: 2px solid #e0e0e0;
   border-radius: 12px;
-  padding: 1.25rem 2rem;
+  padding: 1.25rem 1rem;
   font-size: var(--ocr-font-size, 1.375rem);
   line-height: 1.6;
   color: #1a1a1a;
+  text-align: left;
   resize: vertical;
   min-height: 120px;
   outline: none;
   box-sizing: border-box;
-  white-space: pre-wrap;
   word-break: break-word;
 }
 
