@@ -42,6 +42,7 @@
   font-size: 0.8rem;
   font-weight: 500;
   color: #777;
+  white-space: nowrap;
 }
 
 .toggle-input {
