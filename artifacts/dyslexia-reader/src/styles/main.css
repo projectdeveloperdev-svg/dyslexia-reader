@@ -58,16 +58,16 @@ body {
 .app-logo {
   display: block;
   width: 100%;
-  max-width: 460px;
+  max-width: 220px;
   height: auto;
   margin: 0 auto;
   position: relative;
   z-index: 1;
-  filter: drop-shadow(0 4px 16px rgba(120, 100, 180, 0.20));
+  filter: drop-shadow(0 4px 16px rgba(120, 100, 180, 0.22));
 }
 
 @media (min-width: 600px) {
   .app-logo {
-    max-width: 520px;
+    max-width: 260px;
   }
 }
