@@ -1,0 +1,74 @@
+Goal: Make the voice dropdown usable. Three small improvements bundled
+because they all touch the same code path.
+
+Before writing code, tell me:
+1. Which files this will touch.
+2. Any risk to existing voice selection persistence (dexy-voice in localStorage).
+3. A short 3-step plan.
+
+Wait for my approval before writing code.
+
+--- THE FEATURE ---
+
+The voice dropdown currently shows raw voice IDs like "en-gb-x-gba-local".
+Users can't tell what they're picking. Three fixes:
+
+ISSUE 1 — Readable labels
+Instead of the raw voiceURI / name, show a parsed friendly label.
+Parse the language code and the local/network suffix.
+
+Examples:
+- "en-gb-x-gba-local"     → "UK English (Offline) — Voice 1"
+- "en-gb-x-rjs-local"     → "UK English (Offline) — Voice 2"
+- "en-us-x-tpc-network"   → "US English (Online) — Voice 1"
+- "en-au-x-aub-local"     → "Australian English (Offline) — Voice 1"
+- "fr-fr-x-vlf-local"     → "French (Offline) — Voice 1"
+
+Rules:
+- Language code first part → friendly name ("en" → "English", "fr" → "French", "es" → "Spanish", "de" → "German", "it" → "Italian", "pt" → "Portuguese", "ja" → "Japanese", "zh" → "Chinese", "ar" → "Arabic" — basic list, fall back to the raw code if unknown).
+- Country code second part → accent label ("GB" → "UK", "US" → "US", "AU" → "Australian", "IN" → "Indian", etc.). If unknown, omit it.
+- "-local" → "(Offline)". "-network" → "(Online)". If neither, omit.
+- Voices that share the same parsed label get a number suffix ("Voice 1", "Voice 2", "Voice 3"...) so they're distinguishable.
+- The dropdown VALUE stays as voiceURI (do NOT change the key/value — only the label changes). Lesson 28: voiceURI is the unique key.
+
+Put the parser in /src/features/tts/voiceLabel.js as a pure function.
+
+ISSUE 2 — Filter to local voices only
+Apply Lesson 30 from the handover: filter the voice list to only voices
+where localService === true.
+
+- Voices that don't have localService: true silently fall back to default
+  on Android, so they're confusing.
+- Apply the filter before parsing labels.
+- Keep the existing retry-with-backoff for getSupportedVoices() — do not
+  touch that logic.
+
+ISSUE 3 — Sort the list sensibly
+Sort the filtered voice list before rendering:
+
+1. Voices matching the device locale's language FIRST (e.g. if device is
+   en-GB, all English voices appear before French/Spanish/etc).
+2. Within the same language, sort alphabetically by the friendly label.
+3. Use navigator.language or a similar reliable source for the device locale.
+
+--- RULES ---
+
+- One feature only. No new buttons, no preview button, no settings toggle,
+  no styling changes elsewhere.
+- DO NOT touch:
+  - The voice persistence logic (dexy-voice in localStorage)
+  - The TTS plugin code or settings (speed, pitch)
+  - The retry-with-backoff for getSupportedVoices()
+  - The Read button, edit flow, OCR pipeline, or layout
+- Lesson 28 reminder: voiceURI is the unique React key. Do NOT switch to
+  name or any other field.
+- Lesson 27 reminder: no silent scope creep. If you spot something I didn't
+  ask for, surface it and wait — do not just add it.
+- If a voice's parsed label fails (unknown language code, missing parts),
+  fall back to the raw voiceURI for that one voice. Never crash, never hide
+  voices because of a parse failure.
+
+After writing code, give me a status update:
+- ✅ What you did
+- ⚠️ What might be at risk
+- ➡️ What I should test on the phone
