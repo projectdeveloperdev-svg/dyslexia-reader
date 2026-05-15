@@ -2,23 +2,26 @@
   background-color: #f0f0f0;
   color: #1a1a1a;
   border: 2px solid #d0d0d0;
-  border-radius: 12px;
-  padding: 0.85rem 1.25rem;
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
   font-size: 1.1rem;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
   flex: 1;
   max-width: 180px;
-  transition: background-color 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .paste-btn:hover {
-  background-color: #e2e2e2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 6px 18px rgba(0, 0, 0, 0.09);
 }
 
 .paste-btn:active {
-  transform: scale(0.97);
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .paste-input-panel {
@@ -56,37 +59,45 @@
   background-color: #1a1a1a;
   color: #f9f9f9;
   border: none;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  padding: 1rem 1rem;
   font-size: 1rem;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .paste-use-btn:hover {
-  background-color: #333;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 6px 18px rgba(0, 0, 0, 0.09);
 }
 
 .paste-use-btn:active {
-  transform: scale(0.97);
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .paste-cancel-btn {
   background: none;
   color: #888;
   border: 2px solid #d0d0d0;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  padding: 1rem 1rem;
   font-size: 1rem;
   font-family: 'Inter', sans-serif;
   font-weight: 500;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .paste-cancel-btn:hover {
   border-color: #aaa;
   color: #555;
+}
+
+.paste-cancel-btn:active {
+  transform: translateY(1px);
 }

@@ -24,15 +24,42 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
-  padding: 2rem 1rem;
+  gap: 2.5rem;
+  padding: 2.5rem 1rem;
+}
+
+/* Decorative background blobs — Option B: quiet corners */
+.app-blob {
+  position: fixed;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.22;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-blob--pink {
+  background: rgb(252, 228, 236);
+  top: -100px;
+  right: -100px;
+}
+
+.app-blob--lavender {
+  background: rgb(230, 224, 248);
+  bottom: -100px;
+  left: -100px;
 }
 
 .app-title {
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  line-height: 1.2;
   color: #1a1a1a;
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 599px) {

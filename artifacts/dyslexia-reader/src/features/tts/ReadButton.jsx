@@ -16,6 +16,7 @@ const BG_COLOURS = [
   { label: "Pale mint",   rgb: "209, 250, 229" },
   { label: "Pale grey",     rgb: "243, 244, 246" },
   { label: "Pale lavender", rgb: "230, 224, 248" },
+  { label: "Pale pink",     rgb: "252, 228, 236" },
 ];
 
 const FONT_OPTIONS = [

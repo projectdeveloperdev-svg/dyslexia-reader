@@ -1,0 +1,126 @@
+PHASE 8.5 — ADD PINK OVERLAY + HOME PAGE VISUAL POLISH (PREMIUM FEEL)
+
+Context: Phase 8 is complete. Two jobs in this phase:
+1. Add a 9th reader overlay colour: PINK
+2. Polish the home page to feel premium, using the overlay colours
+
+DO NOT change any existing functionality. This is additive + visual only.
+
+═══════════════════════════════════════════════════════════════
+TASK 1 — Add a pink overlay
+═══════════════════════════════════════════════════════════════
+
+- Find where the existing 8 reader overlay colours are defined
+  (likely in an overlay/settings component CSS or theme file)
+- Add a 9th option: a soft pink. Suggested: #FCE4EC or #FADADD 
+  — pick whichever sits more naturally next to the other 8 (it 
+  should feel like a pastel reading-comfort colour, not a hot pink)
+- Add it to:
+    - The colour definitions / theme
+    - The overlay picker UI so users can select it
+    - Any state/list that drives which overlays are available
+- Confirm the pink shows up in the settings overlay picker and 
+  is selectable just like the other 8
+- Report the exact hex you picked
+
+═══════════════════════════════════════════════════════════════
+TASK 2 — Home page visual polish (premium feel)
+═══════════════════════════════════════════════════════════════
+
+GOAL: Make the home page feel PREMIUM. Think "considered, calm, 
+expensive" — not "busy, playful, colourful." The app charges £2.99/mo 
+for premium features; the home page should feel like that's a fair ask.
+
+Reference feel: Apple's built-in apps, Things 3, Bear, Linear, Stripe's 
+dashboard. NOT: Duolingo, Candy Crush, BeReal. Restraint over decoration.
+
+The home page currently looks plain and "bootstrap-y" — default buttons, 
+no visual identity. Bring the (now 9) overlay colours onto the home page 
+so the home screen feels like part of the same app as the reader, and 
+de-bootstrap the buttons.
+
+──────────────────────────────────────────────────────────────
+2a — Subtle colour accents (premium, restrained)
+──────────────────────────────────────────────────────────────
+- Add 2–3 soft coloured accents to the home page — NOT 5, NOT scattered. 
+  Premium design uses fewer, larger, more deliberate elements.
+- Use 2–3 of the 9 overlay colours, AND MAKE SURE THE NEW PINK IS ONE 
+  OF THE COLOURS USED. The pink should appear as one of the accents on 
+  the home page.
+- Pick colours that work harmoniously together — avoid clashing or 
+  rainbow effects.
+
+- Pick ONE approach (don't combine):
+
+  Option A — "Soft glow": one large, very soft radial gradient behind 
+  the main content area, fading from a tinted overlay colour to 
+  transparent. Like sunlight through a window.
+
+  Option B — "Quiet corners": two large soft blobs in opposite corners 
+  (e.g. top-left and bottom-right), heavily blurred, very low opacity. 
+  Adds depth without busyness.
+
+  Option C — "Single accent stripe": a thin gradient bar at the top or 
+  bottom of the screen using 2–3 overlay colours blended together.
+
+- Opacity: LOW (10–18%). Premium colour is whispered, not shouted.
+- Use CSS filter: blur(20–40px) generously — soft edges read as 
+  expensive, hard edges read as cheap.
+- z-index behind all content. Must not interfere with tap targets or 
+  readability.
+
+──────────────────────────────────────────────────────────────
+2b — De-bootstrap the buttons (premium feel)
+──────────────────────────────────────────────────────────────
+Default Bootstrap buttons read as "free template." Make them feel custom:
+- Border-radius: 14–18px (rounded but not pill-shaped — pill is playful, 
+  not premium)
+- Drop shadow: soft and layered — TWO shadows stacked:
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06);
+  (One tight shadow for crispness, one wider for lift. The Apple/Stripe 
+  trick.)
+- Generous padding: at least 16px vertical, 24px horizontal
+- Font weight: 600 (semibold), not 700 (bold) — bold reads as shouty
+- Letter-spacing: very slight, around 0.01em
+- Press state: on :active, translate down 1px, shadow softens. Subtle.
+- Hover state (desktop testing): shadow lifts slightly. Don't change 
+  colour on hover.
+- Keep existing button colours unchanged
+
+──────────────────────────────────────────────────────────────
+2c — Typography pass
+──────────────────────────────────────────────────────────────
+- Check the main heading/title on the home page
+- If it's using a default font weight, bump to 600 or 700
+- Margin-bottom at least 24px below the heading
+- Line-height: ~1.2 for headings, ~1.5 for body
+
+──────────────────────────────────────────────────────────────
+2d — Spacing audit
+──────────────────────────────────────────────────────────────
+- Premium = generous whitespace. Increase vertical spacing between 
+  major elements by 20–30% from current.
+
+═══════════════════════════════════════════════════════════════
+TASK 3 — Show me before doing anything else
+═══════════════════════════════════════════════════════════════
+
+Stop after Tasks 1 and 2. Don't touch other screens. Don't refactor 
+unrelated code. Show me the result so I can test on phone before we 
+move on.
+
+Files most likely to need editing:
+- Overlay/settings component (for the new pink)
+- Home page component (HomePage.jsx / Home.jsx / similar)
+- Associated CSS files
+- Possibly a shared button CSS file if buttons are reused
+
+REPORT BACK:
+- The exact pink hex you used
+- Which accent option you picked (A / B / C)
+- Which colours you used for the home page accents
+- Which files you changed
+- Any decisions you made along the way
+
+REMINDER: When in doubt, do less. Premium design is what you remove, 
+not what you add.

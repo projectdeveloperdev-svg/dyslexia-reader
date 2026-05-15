@@ -6,6 +6,8 @@
   width: 100%;
   max-width: 480px;
   padding: 0 1rem;
+  position: relative;
+  z-index: 1;
 }
 
 @media (min-width: 600px) {
