@@ -52,29 +52,19 @@ body {
   left: -140px;
 }
 
-.app-title {
-  font-size: 3rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  color: #1a1a1a;
+.app-logo {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin: 2rem auto 0;
   position: relative;
   z-index: 1;
+  filter: drop-shadow(0 4px 16px rgba(120, 100, 180, 0.20));
 }
 
-/* Coloured accent underline under the title */
-.app-title::after {
-  content: "";
-  display: block;
-  width: 52px;
-  height: 3px;
-  background: #A99DD9;
-  border-radius: 2px;
-  margin: 12px auto 0;
-}
-
-@media (max-width: 599px) {
-  .app-title {
-    font-size: 2.4rem;
+@media (min-width: 600px) {
+  .app-logo {
+    max-width: 360px;
   }
 }

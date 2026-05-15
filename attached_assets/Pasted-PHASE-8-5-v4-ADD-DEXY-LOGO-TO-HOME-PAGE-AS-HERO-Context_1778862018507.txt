@@ -1,0 +1,84 @@
+PHASE 8.5 v4 — ADD DEXY LOGO TO HOME PAGE AS HERO
+
+Context: We now have a proper brand logo for Dexy — a wordmark image 
+(icon + "Dexy" text together) saved as a PNG with transparent 
+background. It needs to replace the current plain text "Dexy" title 
+on the home page, and be a clear hero element.
+
+The logo file should be in the project (likely in /public or a 
+similar assets folder). Find it — it's called dexy-wordmark.png or 
+similar. If it's not yet in the project, ask me where I put it.
+
+══════════════════════════════════════════════════════════════
+TASK 1 — Replace the text title with the logo wordmark
+══════════════════════════════════════════════════════════════
+
+- In App.jsx, replace the current <h1> "Dexy" / app-title element 
+  with an <img> tag pointing to the wordmark PNG
+- Use a proper alt attribute: alt="Dexy"
+- Give it a class like .app-logo for styling
+- REMOVE the decorative coloured underline from previous version 
+  (the 3px lavender bar under the title) — the logo replaces it as 
+  the visual anchor
+
+══════════════════════════════════════════════════════════════
+TASK 2 — Make it a hero element
+══════════════════════════════════════════════════════════════
+
+The logo should be the FIRST thing users see — big, confident, the 
+clear identity of the page.
+
+CSS for .app-logo:
+- max-width: 280–320px on mobile (it should feel substantial)
+- max-width: 360px on desktop
+- height: auto (keep aspect ratio)
+- display: block, centered horizontally (margin: 0 auto)
+- margin-top: 2rem (some breathing room from top)
+- margin-bottom: 2.5rem (space before the buttons)
+- Add a SOFT drop shadow using CSS filter (not box-shadow, because 
+  the image has transparency and we want the shadow to follow the 
+  shape, not a rectangle):
+    filter: drop-shadow(0 4px 16px rgba(120, 100, 180, 0.20));
+  (Soft lavender-tinted shadow — matches the logo's own colour 
+  family. This is the trick to make it feel like it sits on the page 
+  with depth.)
+
+══════════════════════════════════════════════════════════════
+TASK 3 — Spacing rebalance
+══════════════════════════════════════════════════════════════
+
+Now that the title is much bigger (logo vs text), the spacing needs 
+to feel right:
+- Make sure there's enough room between the logo and the Scan/Paste 
+  buttons (2.5–3rem)
+- The page should breathe — not cramped, not vast empty space either
+- If the logo + buttons together look bottom-heavy or top-heavy, 
+  adjust top margin on the logo to balance
+
+══════════════════════════════════════════════════════════════
+TASK 4 — Verify the corner blobs still work
+══════════════════════════════════════════════════════════════
+
+The pink + lavender corner blobs should still be there, visible, 
+behind everything. The logo should sit clearly above them (z-index 
+correct). Don't change blob styling.
+
+══════════════════════════════════════════════════════════════
+TASK 5 — Screenshot and report
+══════════════════════════════════════════════════════════════
+
+Take a fresh screenshot and confirm:
+- Logo is clearly the hero of the page
+- Logo has a soft shadow giving it depth (not flat)
+- Spacing feels balanced
+- Corner blobs still visible
+- Buttons still styled correctly from previous round
+
+Files likely to edit:
+- src/App.jsx (replace text with img)
+- src/styles/main.css (.app-logo styling, possibly remove old 
+  .app-title and ::after underline)
+
+REMINDER: The logo IS the identity now. Treat it with the same care 
+you'd treat the Apple logo on Apple.com — big, confident, with space 
+to breathe.
