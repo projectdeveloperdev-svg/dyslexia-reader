@@ -1,0 +1,52 @@
+LOGO CENTERING — STUBBORN ISSUE
+
+The logo is still left-shifted on the home page despite previous 
+trim attempts. The PNG likely has near-transparent pixels (very low 
+alpha, not 0) on the right side that auto-trim isn't catching.
+
+Please:
+
+1. Open the dexy-wordmark.png and inspect its actual dimensions and 
+   content bounds. Report back: 
+   - Image file dimensions (e.g. 800x300)
+   - The bounding box of pixels with alpha > 5% (i.e. where the 
+     ACTUAL visible logo content is within the file)
+   - Calculate the empty padding on each side: top, bottom, left, 
+     right
+
+2. If there's asymmetric padding (more on right than left), 
+   crop the image to ELIMINATE all padding, leaving only the 
+   visible logo content edge-to-edge.
+
+3. Use Pillow (Python) or ImageMagick. Pseudo-code:
+   - Load image
+   - Get the bounding box of non-transparent pixels using a 
+     threshold of alpha > 10 (not 0 — catches near-transparent edges)
+   - Crop to that bounding box
+   - Save back to the same path
+
+4. After cropping, verify by printing the new dimensions — they 
+   should be tighter than before.
+
+5. Reload the home page and take a fresh screenshot. The logo 
+   should now appear PROPERLY centered with equal whitespace left 
+   and right.
+
+Also in this round:
+
+6. REDUCE PINK BLOB OPACITY by ~30% so it doesn't dominate the top 
+   of the screen. The page should feel like balanced pink-lavender, 
+   not "pink with some lavender at the bottom."
+
+7. MAKE THE "Auto-read after scan" TOGGLE LESS PROMINENT:
+   - Reduce its container width to ~70% of the buttons (currently 
+     same width)
+   - Reduce font size slightly (about 90% of current)
+   - Reduce its background opacity so it sits back more visually
+   - Goal: it's visible and usable, but the Scan button clearly 
+     dominates as the primary action
+
+Screenshot mobile (390px viewport) and confirm:
+- Logo properly centered (equal whitespace L and R)
+- Pink and lavender feel balanced
+- Auto-read toggle reads as secondary to the buttons
