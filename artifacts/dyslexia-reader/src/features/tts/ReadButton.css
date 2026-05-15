@@ -28,6 +28,7 @@
   accent-color: #2563eb;
   cursor: pointer;
   border-radius: 4px;
+  touch-action: pan-y;
 }
 
 .voice-select {
