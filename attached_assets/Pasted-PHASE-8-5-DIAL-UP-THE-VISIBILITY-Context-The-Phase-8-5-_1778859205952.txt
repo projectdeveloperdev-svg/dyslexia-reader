@@ -1,0 +1,102 @@
+PHASE 8.5 — DIAL UP THE VISIBILITY
+
+Context: The Phase 8.5 changes are live and correct in the code, but 
+they're TOO SUBTLE — the user looks at the home page and genuinely 
+can't see a difference from before. The previous brief over-rotated on 
+"restraint" and the result is invisible.
+
+GOAL: Keep the premium feel — no rainbow colours, no chunky playful 
+buttons, no clutter — but make the changes CLEARLY VISIBLE. The user 
+should look at the home page and immediately think "ah, this looks 
+designed now."
+
+Stay in the calm/considered lane. We're moving from "Apple at 5% 
+opacity" to "Apple at 100%." Not changing direction, just turning the 
+volume up.
+
+══════════════════════════════════════════════════════════════
+TASK 1 — Make the corner blobs visible
+══════════════════════════════════════════════════════════════
+
+Current: blur 60px, opacity 0.22, ~340px circles. Effectively invisible.
+
+Change to:
+- Opacity: 0.45–0.55 (up from 0.22)
+- Size: 420–500px (up from ~340px)
+- Blur: keep at 60–80px (still soft, just bigger and more present)
+- Keep the same colours (pink top-right, lavender bottom-left)
+- Keep position: fixed and pointer-events: none
+
+The blobs should now be clearly visible as soft coloured washes in the 
+corners — not loud, but undeniably there. If you open the page and 
+have to squint to see them, opacity is still too low.
+
+══════════════════════════════════════════════════════════════
+TASK 2 — Make the buttons clearly different from default
+══════════════════════════════════════════════════════════════
+
+Current button styles are correct but the visual difference from 
+default is too small.
+
+Strengthen them:
+- Border-radius: keep at 16px (good)
+- Shadow: STRENGTHEN — replace the current double-shadow with:
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.10);
+  (Same double-shadow trick, but the wide shadow is now visible. 
+  Buttons should clearly look like they're floating above the page.)
+- Add a subtle gradient to the dark scan button background:
+    background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+  Almost invisible but adds depth — proper iOS/macOS button feel.
+- Make the press state more noticeable:
+    :active { transform: translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+  (Was 1px translate — make it 2px so the tap feedback registers.)
+
+══════════════════════════════════════════════════════════════
+TASK 3 — Make typography breathe
+══════════════════════════════════════════════════════════════
+
+The title and spacing changes were too small to notice. Push further:
+
+- App title: font-size up by ~20% from current, font-weight 700, 
+  letter-spacing: -0.02em (tighter — premium headings are slightly 
+  tightened, not loose)
+- Margin-bottom under title: 40px minimum (was 24px)
+- Gap between major elements on the home page: 3rem (was 2.5rem)
+
+══════════════════════════════════════════════════════════════
+TASK 4 — Add ONE clear "designed" touch
+══════════════════════════════════════════════════════════════
+
+Pick ONE of these and add it — something the user will immediately 
+notice as "oh, that's nice":
+
+Option A: A subtle hairline border under the app title in a soft 
+overlay colour (e.g. lavender at 30% opacity), 1px wide, ~40px long, 
+centred under the title. Reads as deliberate and designed.
+
+Option B: A soft inner glow on the dark scan button using box-shadow 
+inset, very subtle, so the button has a slight 3D quality.
+
+Option C: A small coloured dot (one of the overlay colours, e.g. pink) 
+next to the app title — like a brand mark. ~8px circle.
+
+Pick whichever fits best. Don't do all three.
+
+══════════════════════════════════════════════════════════════
+TASK 5 — Take a fresh screenshot and show me
+══════════════════════════════════════════════════════════════
+
+After applying, take a fresh screenshot from the running dev server 
+and report:
+- Which TASK 4 option you picked and why
+- Confirm blobs are visible in the screenshot
+- Confirm button shadows are visible in the screenshot
+
+Files to edit:
+- src/styles/main.css (.app-blob, .app-title, spacing)
+- src/features/scan/ScanButton.css (.scan-btn)
+- src/features/scan/PasteInput.css (.paste-btn etc)
+- src/App.jsx if Task 4 option needs new DOM
+
+REMINDER: The goal is "visibly nicer at a glance." If the user has to 
+inspect the DOM to see the changes, we've failed again.

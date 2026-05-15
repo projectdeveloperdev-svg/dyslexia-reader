@@ -24,46 +24,57 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2.5rem;
+  gap: 3rem;
   padding: 2.5rem 1rem;
 }
 
 /* Decorative background blobs — Option B: quiet corners */
 .app-blob {
   position: fixed;
-  width: 340px;
-  height: 340px;
+  width: 460px;
+  height: 460px;
   border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.22;
+  filter: blur(70px);
+  opacity: 0.50;
   pointer-events: none;
   z-index: 0;
 }
 
 .app-blob--pink {
   background: rgb(252, 228, 236);
-  top: -100px;
-  right: -100px;
+  top: -120px;
+  right: -120px;
 }
 
 .app-blob--lavender {
   background: rgb(230, 224, 248);
-  bottom: -100px;
-  left: -100px;
+  bottom: -120px;
+  left: -120px;
 }
 
 .app-title {
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: #1a1a1a;
   position: relative;
   z-index: 1;
+  margin-bottom: 40px;
+}
+
+/* Designed hairline under the title */
+.app-title::after {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 1px;
+  background: rgba(170, 148, 220, 0.55);
+  margin: 10px auto 0;
 }
 
 @media (max-width: 599px) {
   .app-title {
-    font-size: 2rem;
+    font-size: 2.4rem;
   }
 }

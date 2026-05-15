@@ -11,17 +11,17 @@
   cursor: pointer;
   flex: 1;
   max-width: 180px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.10);
   transition: box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .paste-btn:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 6px 18px rgba(0, 0, 0, 0.09);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08), 0 12px 28px rgba(0, 0, 0, 0.13);
 }
 
 .paste-btn:active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.05);
+  transform: translateY(2px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .paste-input-panel {
@@ -56,7 +56,7 @@
 
 .paste-use-btn {
   flex: 1;
-  background-color: #1a1a1a;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
   color: #f9f9f9;
   border: none;
   border-radius: 16px;
@@ -66,17 +66,17 @@
   font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.10);
   transition: box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .paste-use-btn:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 6px 18px rgba(0, 0, 0, 0.09);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08), 0 12px 28px rgba(0, 0, 0, 0.13);
 }
 
 .paste-use-btn:active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.05);
+  transform: translateY(2px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .paste-cancel-btn {
