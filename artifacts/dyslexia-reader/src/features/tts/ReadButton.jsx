@@ -1,3 +1,4 @@
+import { labelVoices } from "./voiceLabel";
 import "./ReadButton.css";
 
 const LABELS = {
@@ -35,8 +36,20 @@ function ReadButton({
   const active = ttsState !== "idle";
   const paused = ttsState === "paused";
 
+  // Filter to local (offline-capable) voices only, then label and sort.
+  const localVoices = voices.filter((v) => v.localService === true);
+  const deviceLang = (navigator.language ?? "").split("-")[0].toLowerCase();
+  const labeled = labelVoices(localVoices).sort((a, b) => {
+    const aLang = (a.voice.lang ?? "").split("-")[0].toLowerCase();
+    const bLang = (b.voice.lang ?? "").split("-")[0].toLowerCase();
+    const aPri = aLang === deviceLang ? 0 : 1;
+    const bPri = bLang === deviceLang ? 0 : 1;
+    if (aPri !== bPri) return aPri - bPri;
+    return a.label.localeCompare(b.label);
+  });
+
   function handleVoiceChange(e) {
-    const voice = voices.find((v) => v.voiceURI === e.target.value) ?? null;
+    const voice = localVoices.find((v) => v.voiceURI === e.target.value) ?? null;
     changeVoice(voice);
   }
 
@@ -99,7 +112,7 @@ function ReadButton({
         />
       </div>
 
-      {voices.length > 0 && (
+      {labeled.length > 0 && (
         <div className="speed-row">
           <span className="speed-label">Voice</span>
           <select
@@ -107,9 +120,9 @@ function ReadButton({
             value={selectedVoice?.voiceURI ?? ""}
             onChange={handleVoiceChange}
           >
-            {voices.map((v) => (
-              <option key={v.voiceURI} value={v.voiceURI}>
-                {v.name} ({v.lang})
+            {labeled.map(({ voice, label }) => (
+              <option key={voice.voiceURI} value={voice.voiceURI}>
+                {label}
               </option>
             ))}
           </select>

@@ -72,16 +72,34 @@ function ScanSection() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Restore voice when voices list first populates.
-  // Runs at most once (ref guard). Does NOT write to localStorage so that a
-  // saved voice unavailable on this device is preserved for future use.
+  // Runs at most once (ref guard).
+  // Mirrors the localService filter used in ReadButton so the restored voice
+  // always appears in the dropdown.
+  // If the saved voice is absent from the local pool, falls back to the first
+  // available local voice and updates localStorage accordingly.
   const voiceRestored = useRef(false);
   useEffect(() => {
     if (voiceRestored.current || !voices.length) return;
     voiceRestored.current = true;
+
+    const localVoices = voices.filter((v) => v.localService === true);
+    const pool = localVoices.length > 0 ? localVoices : voices;
+
     const savedUri = localStorage.getItem("dexy-voice");
-    if (!savedUri) return;
-    const saved = voices.find((v) => v.voiceURI === savedUri);
-    if (saved) changeVoice(saved);
+    if (savedUri) {
+      const saved = pool.find((v) => v.voiceURI === savedUri);
+      if (saved) {
+        changeVoice(saved);
+        return;
+      }
+      // Saved voice not in local pool — pick first available and update storage.
+      const fallback = pool[0];
+      if (fallback) {
+        changeVoice(fallback);
+        try { localStorage.setItem("dexy-voice", fallback.voiceURI); } catch (e) { console.error("localStorage write failed:", e); }
+      }
+    }
+    // No saved voice: leave useTTS to use its own default.
   }, [voices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wrappers that persist audio settings to localStorage.
