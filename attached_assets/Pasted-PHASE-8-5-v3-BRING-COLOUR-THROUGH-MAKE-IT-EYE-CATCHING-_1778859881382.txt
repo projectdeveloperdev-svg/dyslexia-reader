@@ -1,0 +1,123 @@
+PHASE 8.5 v3 — BRING COLOUR THROUGH, MAKE IT EYE-CATCHING
+
+Context: Previous Phase 8.5 was too whispery — user couldn't see the 
+changes. The corner blobs were dialled up and are now visible, but the 
+buttons still feel bootstrap-y. User now wants colour to come through 
+more clearly. Stay calm and tasteful — not clown colours, not neon — 
+but the home page should clearly LOOK COLOURFUL when you open it. 
+Eye-catching, not loud.
+
+Reference feel: Headspace, Notion, Linear, iOS quick-action buttons. 
+Modern pastel-tinted apps where colour is a real feature, not a hint.
+
+══════════════════════════════════════════════════════════════
+TASK 1 — Strengthen the corner washes
+══════════════════════════════════════════════════════════════
+
+Current blobs are visible but still subtle. Push them to clearly 
+coloured washes:
+- Opacity: 0.6–0.7 (up from current ~0.5)
+- Size: 500–600px (up from current ~420–500px)
+- Blur: 70–90px (slightly more spread)
+- Keep pink top-right, lavender bottom-left
+- Keep position: fixed, pointer-events: none
+
+Open the page — you should immediately see the room is "pink and 
+lavender tinted," not "mostly white with a hint of colour."
+
+══════════════════════════════════════════════════════════════
+TASK 2 — Redesign the SCAN button as a pastel hero
+══════════════════════════════════════════════════════════════
+
+This is the single biggest change. Stop being a dark grey rectangle.
+
+New look:
+- Background: soft pastel from the overlay palette. Use pale lavender 
+  (#E6E0F8) or pale pink (#FCE4EC) — whichever has more visual weight 
+  on the page. Pick one and commit.
+- Text colour: dark (#1a1a1a) — keep readable, high contrast
+- Border-radius: 18px (slightly more rounded, feels app-like)
+- Padding: 1.1rem 2.5rem (slightly chunkier vertically)
+- Font-weight: 600
+- Font-size: 1.15rem
+- Shadow: keep the strong double-shadow it already has, but tinted to 
+  match the button colour:
+    box-shadow: 
+      0 2px 4px rgba(0,0,0,0.06), 
+      0 10px 28px rgba(200,180,220,0.35);
+  (The second shadow is a soft lavender-tinted glow — gives it a 
+  "halo" instead of a neutral grey shadow. Adjust the rgb if you pick 
+  pink instead of lavender.)
+- Add a very subtle gradient for depth:
+    background: linear-gradient(180deg, #EFE9FB 0%, #E6E0F8 100%);
+  (Top slightly lighter — feels like real light hitting it)
+- Hover: shadow lifts (no colour change)
+- Active: translateY(2px), shadow shrinks
+
+The Scan button should now be the obvious primary action — clearly 
+the brightest, most coloured thing on the screen.
+
+══════════════════════════════════════════════════════════════
+TASK 3 — Restyle PASTE TEXT button as quiet secondary
+══════════════════════════════════════════════════════════════
+
+If Scan is the hero, Paste needs to step back so hierarchy is clear:
+- Background: transparent
+- Border: 1.5px solid #1a1a1a (or rgba(0,0,0,0.15) for softer)
+- Text colour: #1a1a1a
+- Border-radius: 18px (match Scan)
+- Same padding as Scan so they're the same size
+- Font-weight: 600
+- No shadow (or very faint)
+- Hover: background fills with rgba(0,0,0,0.04)
+- Active: translateY(1px)
+
+Result: Scan = colour and weight (hero). Paste = outline only (quiet).
+
+══════════════════════════════════════════════════════════════
+TASK 4 — Coloured underline under the app title
+══════════════════════════════════════════════════════════════
+
+Add a small decorative element under the "Dexy" / app title:
+- A short horizontal line, 48–60px wide, 3px tall, border-radius 
+  rounded so the ends are soft
+- Colour: pick a third overlay colour that complements pink + lavender 
+  — e.g. pale yellow (#FFF8DC) or pale mint, whichever you have. If 
+  none fit, use a slightly stronger lavender (#A99DD9) at 100% opacity
+- Centred horizontally under the title
+- Margin: 12px above and below
+- Position: between the title and the rest of the page content
+
+This is the "single designed touch" that ties the colour story together.
+
+══════════════════════════════════════════════════════════════
+TASK 5 — Keep the title and spacing changes
+══════════════════════════════════════════════════════════════
+
+Confirm these are still in place:
+- App title font-weight 700
+- Letter-spacing -0.02em on title
+- Generous spacing (3rem gap) between major page elements
+- Title size 20% larger than original default
+
+══════════════════════════════════════════════════════════════
+TASK 6 — Screenshot and report
+══════════════════════════════════════════════════════════════
+
+Take a fresh screenshot from the running dev server. Report:
+- Which colour you picked for the Scan button (pink or lavender)
+- Which colour you used for the title underline
+- Confirm corner washes are clearly visible
+- Confirm the Scan button reads as the primary/hero action
+- Files changed
+
+Files to edit:
+- src/styles/main.css (blobs, title, underline)
+- src/features/scan/ScanButton.css (scan button hero redesign)
+- src/features/scan/PasteInput.css (paste button as quiet secondary)
+- src/App.jsx if title underline needs new DOM element
+
+REMINDER: When opened, the page should feel "modern, calm, and 
+coloured" — not "white page with grey buttons." If after the changes 
+the user still says "looks the same," we've still failed. The goal 
+this time is unmistakable.
