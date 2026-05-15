@@ -1,0 +1,54 @@
+PHASE 8.5 — HOME PAGE BALANCE PASS
+
+The logo and layout still need work. Specific issues to fix:
+
+1. LOGO STILL NOT CENTERED
+   - Despite previous centering attempts, the logo appears 
+     left-aligned with empty space to its right
+   - Check BOTH: the PNG file (still transparent padding on the 
+     right edge?) AND the CSS (parent container alignment, image's 
+     own margins)
+   - Run the trim/auto-crop again on the PNG if needed
+   - Verify in screenshot that the logo has equal space left and 
+     right
+
+2. MAKE THE LOGO LARGER
+   - Currently sits like a small header. It should be a hero.
+   - Mobile max-width: 460px (up from current)
+   - If mobile screen is ~390px wide, that means logo should span 
+     close to full width with small margins. Big and confident.
+
+3. VERTICALLY CENTER THE PAGE CONTENT
+   - Currently everything sits in the top half of the screen with 
+     empty space below
+   - Either: use flexbox on the main container with 
+     justify-content: center to vertically center the whole content 
+     cluster
+   - OR: add padding-top to push content down to roughly the 
+     visual middle
+   - Goal: content should feel balanced top-to-bottom, not 
+     top-heavy
+
+4. RE-EXAMINE THE "Auto-read after scan" TOGGLE
+   - Currently floats awkwardly between logo and buttons
+   - Move it to sit DIRECTLY ABOVE the Scan button as a tightly 
+     coupled option, OR
+   - Add a subtle container/card around it so it reads as grouped 
+     intentional UI, not loose floating text
+   - Reduce its visual prominence so it doesn't compete with the 
+     Scan button
+
+5. RECHECK COLOUR BALANCE
+   - The pink blob (top) currently dominates more than the lavender 
+     (bottom). The page feels top-weighted.
+   - Either reduce pink opacity slightly OR increase lavender size 
+     by ~15% to rebalance
+   - Goal: feels like a balanced gradient, not pink-heavy
+
+Take a fresh mobile-viewport screenshot (390px wide simulating a 
+phone) and confirm:
+- Logo is clearly centered
+- Logo is hero-sized
+- Content sits in middle of screen vertically
+- Auto-read toggle no longer looks orphaned
+- Colour wash feels balanced
