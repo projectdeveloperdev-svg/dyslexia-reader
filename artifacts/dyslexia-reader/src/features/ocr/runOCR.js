@@ -13,10 +13,12 @@ export async function runOCR(imageUrl) {
     return "";
   }
 
+  // Join blocks with \n\n so paragraph boundaries reach cleanText intact.
+  // Each element in results is a detected text region (block/paragraph).
   const text = results
     .map((r) => r.text)
     .filter((t) => t && t.trim().length > 0)
-    .join("\n");
+    .join("\n\n");
 
   return text;
 }

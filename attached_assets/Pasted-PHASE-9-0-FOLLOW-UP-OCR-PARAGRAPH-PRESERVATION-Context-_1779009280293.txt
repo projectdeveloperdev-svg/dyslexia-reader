@@ -1,0 +1,83 @@
+PHASE 9.0 FOLLOW-UP — OCR PARAGRAPH PRESERVATION
+
+Context: Phase 9.0 fixed paragraph breaks for the PASTE path. The 
+OCR/scan path was left untouched at the time because raw OCR output 
+is noisier (line breaks mid-sentence on every visual line). However, 
+user testing on phone reveals the OCR path now needs the same 
+treatment — scanning a book that clearly has paragraph breaks 
+results in a wall of text in the reader.
+
+This is the same root cause as the original paste bug — the existing 
+cleanText function for OCR was written before we cared about 
+paragraph preservation, and it almost certainly destroys \n\n along 
+with the single-line mid-sentence \n it's meant to collapse.
+
+GOAL
+Update the OCR cleaning function (cleanText) so that paragraph 
+breaks (\n\n) in Tesseract output survive into the reader view, 
+while still collapsing single \n (mid-sentence visual wraps) to 
+spaces.
+
+DIAGNOSTIC STEPS — do these first, report findings before fixing
+
+1. Find the OCR cleanText function. Likely in a utils file or in 
+   ScanSection.jsx. Report:
+   - File path
+   - The current full implementation of cleanText
+   - Where it's called (should now only be the OCR path, since 
+     paste uses cleanPasteText)
+
+2. Trace what Tesseract actually returns. Add a temporary 
+   console.log of the raw Tesseract output BEFORE cleanText runs. 
+   Look at:
+   - Are paragraph breaks present as \n\n in raw OCR output?
+   - Or does Tesseract concatenate everything?
+   - What do the line endings look like? (\n, \r\n, or something 
+     else?)
+
+3. Report findings before modifying anything.
+
+FIX
+
+Apply the same logic as cleanPasteText, with one OCR-specific 
+adjustment:
+
+1. Normalise line endings first: \r\n → \n, lone \r → \n
+2. Collapse 3+ consecutive newlines down to exactly \n\n 
+   (Tesseract sometimes emits 3-4 blank lines between paragraphs 
+   — they should all become single paragraph breaks)
+3. Convert single \n (not followed by another \n) to a space — 
+   this rejoins mid-sentence visual line wraps
+4. Collapse multiple spaces/tabs to a single space
+5. Trim leading/trailing whitespace
+
+Keep any OCR-specific noise handling that cleanText already does 
+(e.g. removing weird Tesseract artefacts) — just make sure none of 
+that strips \n\n.
+
+If the existing cleanText also does the "short word at start of 
+line" removal that was flagged before, KEEP that for OCR (it's 
+useful for OCR noise) — but make sure it doesn't accidentally 
+remove the \n that precedes the short word.
+
+VERIFICATION
+
+1. Scan a printed page with clear paragraph breaks (e.g. a book or 
+   article) → paragraphs visible in reader with blank lines between
+2. Scan a single-paragraph page → text still reads cleanly without 
+   weird mid-sentence breaks
+3. Paste path still works as fixed in 9.0 (regression check)
+4. TTS on a multi-paragraph scan → audible pause between paragraphs
+
+DO NOT
+- Don't change cleanPasteText (it's working)
+- Don't merge cleanText and cleanPasteText back into one function — 
+  they serve different purposes
+- Don't refactor other things
+- Don't add config/settings options
+
+Report:
+- Current cleanText implementation (before fix)
+- What Tesseract raw output looks like (your diagnostic finding)
+- New cleanText implementation
+- Confirmation that the paste path is untouched
