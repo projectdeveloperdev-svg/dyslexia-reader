@@ -161,16 +161,17 @@ function ScanSection() {
     }
   }
 
-  // Paste-specific path: preserve paragraph breaks, don't apply OCR noise rules.
+  // Paste-specific path: preserve all newlines, don't apply OCR noise rules.
   function handlePasteResult(raw) {
     if (!raw || !raw.trim()) {
       setStatus("error");
       return;
     }
     const cleaned = raw
-      .replace(/\n{3,}/g, "\n\n")   // 3+ blank lines → single paragraph break
-      .replace(/\n(?!\n)/g, " ")     // single newlines → space (rejoin wrapped lines)
-      .replace(/ {2,}/g, " ")        // collapse multiple spaces
+      .replace(/\r\n/g, "\n")        // normalise Windows line endings first
+      .replace(/\r/g, "\n")          // normalise old Mac line endings
+      .replace(/\n{3,}/g, "\n\n")    // collapse 3+ blank lines to one paragraph break
+      .replace(/[ \t]{2,}/g, " ")    // collapse runs of spaces/tabs only (not newlines)
       .trim();
     setText(cleaned);
     setStatus("done");
