@@ -1,0 +1,85 @@
+PHASE 9.0/9.1 OCR — TITLE-MERGE BUG STILL OCCURRING AFTER FIX
+
+User tested the previous title-detection fix on phone. Result on a 
+book page with chapter heading:
+
+ACTUAL OUTPUT: "Chapter 1. Once upon a time..."
+EXPECTED OUTPUT: 
+  "Chapter 1"
+  [blank line]
+  "Once upon a time..."
+
+Note: the actual output has a REAL full stop and proper space 
+between "Chapter 1." and "Once upon a time" — they read as one 
+flowing sentence.
+
+This suggests the full stop is genuinely present in the OCR data — 
+either because:
+  (a) The book prints chapter headings as "Chapter 1." with a 
+      period (very common — numbering convention)
+  (b) The OCR misread a decorative element or layout dot as a period
+  (c) The OCR is returning "Chapter 1." and "Once upon a time..." 
+      on the SAME line (one OCR result, not two), in which case the 
+      line-walking heuristic has nothing to walk between
+
+DIAGNOSTIC STEPS — do these in order, report findings before fixing
+
+1. Add a console.log of the RAW OCR results array returned from the 
+   plugin, BEFORE any joining or cleaning, when scanning a book 
+   page with a "Chapter X" heading.
+   
+   We need to see:
+   - Are "Chapter 1." and "Once upon a time" separate items in the 
+     results array, or one combined item?
+   - If separate: do they each appear on their own line in the 
+     joined string going into cleanText?
+
+2. Add a console.log INSIDE cleanText of the input string (before 
+   processing) when this scan runs.
+
+3. Trace whether rule (a) (terminal-punctuation + next-line-capital) 
+   is being reached for the "Chapter 1." / "Once upon a time" pair. 
+   If yes, why isn't it inserting \n\n? If no, why is the line walker 
+   skipping it?
+
+Report findings before fixing anything.
+
+LIKELY FIX (after diagnosis confirms)
+
+If the OCR plugin returns "Chapter 1." and "Once upon a time" as 
+SEPARATE items but they end up on the same line somehow:
+- Trace where they get merged
+- Add a paragraph break between them
+
+If they come back as ONE item from the plugin already (chapter 
+number and first sentence merged at the plugin level):
+- That's harder. We'd need to detect "Chapter N." or "Chapter N:" 
+  patterns mid-text and split on them.
+- Add a regex pre-pass in cleanText that, before splitting into 
+  lines, detects patterns like:
+    /^(Chapter|Section|Part)\s+\d+[.:]?\s+/i 
+  at the START of a string or after a paragraph break, and inserts 
+  \n\n after the chapter heading.
+- Also handle ALL CAPS titles followed by capitalised text mid-line.
+
+Test cases:
+- "Chapter 1. Once upon a time" → "Chapter 1.\n\nOnce upon a time"
+- "Chapter 12: The Forest. The trees were tall" → 
+  "Chapter 12: The Forest.\n\nThe trees were tall"
+- "INTRODUCTION The book begins with" → 
+  "INTRODUCTION\n\nThe book begins with"
+- Normal sentence containing "page 5 of the book" → unchanged 
+  (no chapter pattern match)
+- Normal sentence "This is chapter 1 of my life" → unchanged 
+  (not at line start, no number)
+
+Do NOT touch the paste path.
+Do NOT change the existing rules unless diagnosis shows they're 
+broken — only ADD pre-processing for chapter-pattern detection if 
+needed.
+
+Report:
+- Raw OCR output for a real book chapter-page scan
+- The string entering cleanText
+- Which of (a), (b), (c) above is the actual cause
+- Then the fix

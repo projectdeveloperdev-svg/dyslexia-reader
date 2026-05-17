@@ -13,6 +13,14 @@ export async function runOCR(imageUrl) {
     return "";
   }
 
+  // Diagnostic: log raw plugin output to help confirm whether chapter headings
+  // arrive as separate results or merged with the following sentence.
+  // Remove once paragraph detection is confirmed stable.
+  console.log(
+    "[runOCR] raw results (" + results.length + " items):",
+    results.map((r) => JSON.stringify(r.text))
+  );
+
   // Each result is ONE physical text line (confirmed from native source: Android
   // iterates block.getLines(), iOS returns one VNRecognizedTextObservation per line).
   // Join with single \n; cleanText applies heuristic paragraph detection.
