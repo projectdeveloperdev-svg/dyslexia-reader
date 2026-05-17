@@ -1,0 +1,194 @@
+PHASE 9.1 — COPY TEXT BUTTON + STUDY PROMPTS
+
+Context: Phase 9.0 (paragraph handling) is complete and working on 
+phone. Phase 9.1 adds the ability for users to copy their scanned/
+pasted text to the clipboard — optionally with a pre-baked study 
+prompt prepended — so they can paste straight into ChatGPT, Gemini, 
+or any other AI tool. Dexy stays as the capture-and-read layer; 
+users bring their own AI for understanding.
+
+Strategic role: this is the feature that replaces "build our own AI 
+chat" for 80% of use cases. Dyslexic users find typing prompts the 
+hardest part. Pre-baking the prompt removes that friction entirely.
+
+GOAL
+Add a labelled row of one-tap "copy" actions to the reader view:
+- 1 plain "Copy" button (no prompt prepended)
+- 4 study-prompt buttons that copy "[prompt]\n\n[text]" to clipboard
+All buttons show a toast confirmation. All are free-tier.
+The row is introduced by a section heading: "Send to your favourite AI"
+A first-time tooltip explains the feature once, then never again.
+
+═══════════════════════════════════════════════════════════════
+TASK 1 — Section heading
+═══════════════════════════════════════════════════════════════
+
+Above the row of buttons, add a small section heading:
+
+   Send to your favourite AI
+
+Styling:
+- Font-size: ~0.85rem (small but readable)
+- Font-weight: 500 (medium)
+- Colour: muted (e.g. #666 or rgba(0,0,0,0.6)) — present but not 
+  shouting
+- Margin-bottom: ~8px between the heading and the button row
+- Text-align: left (matches the row beneath)
+- No background, no border — just the label
+
+═══════════════════════════════════════════════════════════════
+TASK 2 — Add the button row
+═══════════════════════════════════════════════════════════════
+
+Place a row of 5 small pill-style buttons directly below the heading, 
+in the reader view (the screen showing scanned/pasted text with TTS 
+controls).
+
+Buttons (in order, left to right):
+1. "Copy"           → copies plain text, no prompt
+2. "Summarise"      → prepends summarise prompt + copies
+3. "Explain"        → prepends explain prompt + copies
+4. "Quiz me"        → prepends quiz prompt + copies
+5. "Key points"     → prepends key points prompt + copies
+
+Placement:
+- Below the text content but above (or near) the TTS playback 
+  controls — pick the spot that fits the existing reader layout
+- Horizontal row, scrollable horizontally if screen is narrow 
+  (overflow-x: auto on the container)
+
+Styling:
+- Match the Phase 8.5 secondary button system (transparent or very 
+  light background, hairline border, no shadow)
+- Border-radius: pill-style — fully rounded (border-radius: 999px) 
+  to differentiate from the squarer hero/primary buttons
+- Padding: compact — quick-actions, not full-size buttons
+- Font: smaller than the main buttons (~0.85rem), font-weight: 500
+- The first button ("Copy") may have a subtle visual difference 
+  (e.g. slightly darker border) to read as the "plain" default — 
+  optional, keep subtle if used
+
+═══════════════════════════════════════════════════════════════
+TASK 3 — First-time tooltip
+═══════════════════════════════════════════════════════════════
+
+The first time the user lands on the reader view with the button 
+row visible:
+
+- Show a small tooltip/popover anchored to the row
+- Message: "Copies the text — with or without a study prompt — so 
+  you can paste it into ChatGPT, Gemini, or any AI app."
+- Has a small dismiss control (X or "Got it")
+- Once dismissed, NEVER shows again — persist this in localStorage 
+  (key suggestion: "dexy.tooltip.copyRow.seen" = "true")
+- Auto-dismiss after first tap on any button in the row as well 
+  (if user uses the feature, they don't need the tooltip)
+- Styling: soft pastel background (lavender or pink overlay 
+  colour), small drop shadow, rounded corners — matches the 
+  premium feel from Phase 8.5
+
+═══════════════════════════════════════════════════════════════
+TASK 4 — Wire up the clipboard actions
+═══════════════════════════════════════════════════════════════
+
+Each button calls a shared copy function. The function:
+
+1. Takes a prompt string (empty string for plain Copy) and the 
+   current text from state
+2. If prompt is non-empty, concatenates: prompt + "\n\n" + text
+   If prompt is empty, just uses text as-is
+3. Copies the result to clipboard via navigator.clipboard.writeText()
+4. If navigator.clipboard isn't available in the Capacitor Android 
+   WebView, falls back to @capacitor/clipboard plugin
+5. Shows the success toast on success, error toast on failure
+
+CRITICAL: The text from state must be passed exactly as stored — 
+do NOT run any cleaning, trimming, or transformation on it. We 
+fixed paragraph preservation in 9.0 — this must respect that.
+
+Prompt strings to use (define as constants at the top of the file):
+
+const PROMPTS = {
+  summarise: "Please summarise this in simple, clear language:",
+  explain:   "Please explain this in simple words, as if I'm 14:",
+  quiz:      "Create 5 quiz questions to test my understanding of this:",
+  keyPoints: "List the 5 most important points from this:",
+};
+
+Concatenation format:
+  [prompt]
+  
+  [user's text]
+
+(prompt, blank line, then the text — \n\n between them.)
+
+═══════════════════════════════════════════════════════════════
+TASK 5 — Toast confirmation
+═══════════════════════════════════════════════════════════════
+
+- On successful copy, show a brief toast at the bottom-centre
+- Message depends on which button was tapped:
+  - "Copy" → "Copied!"
+  - "Summarise" → "Copied with summarise prompt"
+  - "Explain" → "Copied with explain prompt"
+  - "Quiz me" → "Copied with quiz prompt"
+  - "Key points" → "Copied with key points prompt"
+- Style: soft pastel background (lavender works well), rounded, 
+  subtle shadow
+- Auto-dismiss after ~1.8 seconds
+- If a toast system already exists in the codebase, USE IT — 
+  don't introduce a new pattern
+- If no toast system exists, add a simple lightweight one — a 
+  tiny inline component or hook. Don't pull in a heavy library.
+
+Error case: if clipboard write fails, show "Couldn't copy — try again"
+
+═══════════════════════════════════════════════════════════════
+TASK 6 — Edge cases
+═══════════════════════════════════════════════════════════════
+
+- If there's no text in state (user hasn't scanned/pasted anything 
+  yet) → hide the entire heading + button row, or disable all 5 
+  buttons with visibly reduced opacity. Pick whichever matches 
+  existing UI conventions in the app.
+- If the row of 5 buttons doesn't fit on a narrow screen → allow 
+  horizontal scroll within the row (overflow-x: auto on the 
+  container, no horizontal scroll on the page itself).
+
+═══════════════════════════════════════════════════════════════
+TASK 7 — Verification
+═══════════════════════════════════════════════════════════════
+
+Take a screenshot of the reader view with text loaded, showing 
+the new heading + button row.
+
+Verification checklist for me to test on phone:
+1. "Send to your favourite AI" heading visible above the row
+2. All 5 buttons visible in a row in the reader view
+3. Buttons match the secondary-button style from Phase 8.5
+4. First-time tooltip appears on the first visit
+5. Tooltip dismisses on tap (X/Got it) AND on first button use
+6. Tooltip never reappears after dismissal
+7. Tapping "Copy" → text on clipboard, no prompt prepended
+8. Tapping each study prompt → prompt + blank line + text on 
+   clipboard
+9. Toast shows the correct message for each button
+10. Pasting into ChatGPT / Notes confirms paragraph breaks survive 
+    (Phase 9.0 not regressed)
+11. Empty-state behaviour works (no text → heading + row hidden 
+    or disabled)
+12. Row scrolls horizontally on a narrow screen if needed
+
+DO NOT
+- Don't refactor unrelated code
+- Don't add a settings option to customise prompts (future feature)
+- Don't make any of these premium-gated — all free
+- Don't change the existing button system, just match its style
+- Don't touch the OCR or paste paths
+- Don't introduce a new toast library if one already exists
+
+Report back:
+- Which file(s) you changed
+- Where you placed the heading + button row in the UI
+- Whether you used an existing toast system or added a new one
+- Screenshot of the new feature in place

@@ -4,6 +4,7 @@ import UploadButton from "./UploadButton";
 import PasteInput from "./PasteInput";
 import ReadButton from "../tts/ReadButton";
 import WordText from "../tts/WordText";
+import CopyRow from "../copy/CopyRow";
 import { useTTS } from "../tts/useTTS";
 import { cleanText } from "../ocr/cleanText";
 import "./ScanSection.css";
@@ -245,6 +246,7 @@ function ScanSection() {
               {isEditing ? "Done" : "Edit"}
             </button>
           </div>
+          <CopyRow text={text} />
           <ReadButton
             ttsState={ttsState}
             rate={rate}

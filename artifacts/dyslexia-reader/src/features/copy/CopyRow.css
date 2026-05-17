@@ -1,0 +1,124 @@
+/* ── Container ───────────────────────────────────────────── */
+.copy-row-wrapper {
+  width: 100%;
+  max-width: 640px;
+  position: relative;
+}
+
+/* ── Section heading ─────────────────────────────────────── */
+.copy-row-heading {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #666;
+  margin: 0 0 8px 0;
+  text-align: left;
+}
+
+/* ── Scrollable pill row ─────────────────────────────────── */
+.copy-row-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.copy-row-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Pill buttons ────────────────────────────────────────── */
+.copy-pill {
+  flex-shrink: 0;
+  background: transparent;
+  color: #1a1a1a;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s ease, border-color 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.copy-pill:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.copy-pill:active {
+  transform: translateY(1px);
+}
+
+/* "Copy" (plain) gets a slightly stronger border to read as the default */
+.copy-pill--plain {
+  border-color: rgba(0, 0, 0, 0.30);
+}
+
+/* ── First-time tooltip ──────────────────────────────────── */
+.copy-tooltip {
+  margin-top: 0.75rem;
+  background: rgb(230, 224, 248);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 16px rgba(120, 100, 180, 0.15);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.copy-tooltip-text {
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: #333;
+  line-height: 1.5;
+  flex: 1;
+  margin: 0;
+}
+
+.copy-tooltip-dismiss {
+  flex-shrink: 0;
+  background: rgba(120, 100, 180, 0.18);
+  border: none;
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #5a4a8a;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+  transition: background 0.12s ease;
+}
+
+.copy-tooltip-dismiss:hover {
+  background: rgba(120, 100, 180, 0.28);
+}
+
+/* ── Toast ───────────────────────────────────────────────── */
+.copy-toast {
+  position: fixed;
+  bottom: 2.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgb(230, 224, 248);
+  color: #333;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  padding: 0.6rem 1.4rem;
+  border-radius: 999px;
+  box-shadow: 0 4px 20px rgba(120, 100, 180, 0.22);
+  z-index: 1000;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: copy-toast-in 0.18s ease;
+}
+
+@keyframes copy-toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0);   }
+}
