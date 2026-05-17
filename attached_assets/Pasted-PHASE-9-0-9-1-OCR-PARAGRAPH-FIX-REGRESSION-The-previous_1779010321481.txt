@@ -1,0 +1,84 @@
+PHASE 9.0/9.1 — OCR PARAGRAPH FIX REGRESSION
+
+The previous OCR fix (changing .join("\n") to .join("\n\n") in 
+runOCR.js, and rewriting cleanText with the regex approach) made 
+things WORSE in practice, not better. User just tested on phone:
+
+ACTUAL BEHAVIOUR
+- Scanned a real book page with 3 actual paragraphs
+- Reader shows what looks like ~9 separate paragraphs (or chunks)
+- BUT — the chunks have no visual blank line between them. They 
+  read like a list of sentences, not visually-separated paragraphs
+
+So we have TWO problems happening together:
+
+PROBLEM 1 — over-paragraphing
+The @jcesarmobile/capacitor-ocr plugin returns text blocks that 
+correspond to visual layout regions, NOT logical paragraphs. On a 
+book page with justified text, this often means each block is one 
+or two lines, not one paragraph. So a 3-paragraph page returns 
+~9 blocks, and we now treat each as its own paragraph.
+
+This is a fundamental mismatch — blocks ≠ paragraphs.
+
+PROBLEM 2 — visual paragraph rendering is gone or weak
+Even though \n\n is being inserted between blocks, the reader is 
+NOT showing visible blank lines between them. They appear stacked 
+with no gap. This is suspicious because Phase 9.0 added 
+`white-space: pre-line` to .ocr-result-box, which should make 
+\n\n display as a blank line.
+
+DIAGNOSTIC STEPS — do these in order, report findings before fixing
+
+1. Add a console.log of the raw text returned from the OCR plugin 
+   BEFORE any cleaning. Just dump the array of blocks. We need to 
+   see what the plugin actually returns for a real book page.
+
+2. Add a console.log of the text AFTER cleanText runs. Confirm 
+   \n\n is or isn't present between blocks at that point.
+
+3. Inspect the rendered DOM for an OCR result on phone (Chrome 
+   DevTools remote debugging if needed, OR just describe what you 
+   find): is the OCR text rendered into the same .ocr-result-box 
+   element that has white-space: pre-line, or a different one?
+
+4. Confirm in the LIVE bundle (not source) that .ocr-result-box 
+   still has white-space: pre-line. CSS specificity could have 
+   silently broken it.
+
+5. Report findings before fixing.
+
+LIKELY FIXES TO CONSIDER (after diagnosis)
+
+A) Better paragraph detection
+   Don't treat every OCR block as a paragraph. Instead:
+   - Get block bounding boxes from the OCR plugin (most plugins 
+     return position data — check the plugin's response shape)
+   - Calculate vertical gap between consecutive blocks
+   - Only treat as paragraph break if vertical gap > N pixels 
+     (where N ≈ 1.5× line height)
+   - Otherwise join blocks with a space (same paragraph, just 
+     wrapped lines)
+
+B) If position data isn't available
+   Fall back to heuristic:
+   - Join all blocks with a space
+   - Detect paragraph breaks from text content (e.g. sentence 
+     ending with . followed by capital letter at start of next 
+     block could be a paragraph)
+   - This is less reliable but better than over-paragraphing
+
+C) Visual rendering
+   Confirm white-space: pre-line is actually applied. If not, fix 
+   the CSS path. If it is and \n\n is in the text, then the 
+   rendering should work — but verify in the DOM.
+
+DO NOT
+- Don't change the paste path (it's working)
+- Don't merge cleanText and cleanPasteText
+- Don't refactor unrelated code
+- Don't ship a fix without testing the diagnostic outputs first
+
+Report findings BEFORE making changes. We need to understand what 
+the OCR plugin is actually returning before deciding how to handle 
+it.

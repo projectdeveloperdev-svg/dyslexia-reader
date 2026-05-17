@@ -13,12 +13,13 @@ export async function runOCR(imageUrl) {
     return "";
   }
 
-  // Join blocks with \n\n so paragraph boundaries reach cleanText intact.
-  // Each element in results is a detected text region (block/paragraph).
+  // Each result is ONE physical text line (confirmed from native source: Android
+  // iterates block.getLines(), iOS returns one VNRecognizedTextObservation per line).
+  // Join with single \n; cleanText applies heuristic paragraph detection.
   const text = results
     .map((r) => r.text)
     .filter((t) => t && t.trim().length > 0)
-    .join("\n\n");
+    .join("\n");
 
   return text;
 }
