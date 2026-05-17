@@ -1,0 +1,97 @@
+PHASE 9.0/9.1 OCR FIX — TWO NEW BUGS
+
+Recent OCR fix works for body paragraphs but two new issues need 
+diagnosing and fixing.
+
+═══════════════════════════════════════════════════════════════
+BUG 1 — TITLES MERGED INTO FOLLOWING SENTENCES
+═══════════════════════════════════════════════════════════════
+
+Lines that look like titles or headings (e.g. "Chapter 1", section 
+names — short text that doesn't end with punctuation) are being 
+joined onto the start of the next sentence with a space, instead of 
+being kept as their own paragraph.
+
+Example actual output: "Chapter 1 Once upon a time..."
+Should be:
+  Chapter 1
+  [blank line]
+  Once upon a time...
+
+Cause: the sentence-boundary heuristic in cleanText only inserts a 
+paragraph break if the previous line ends with .!?…  A title with no 
+ending punctuation doesn't trigger a break.
+
+FIX — Add a "looks like a title" detection rule to cleanText:
+
+Between consecutive lines, insert a paragraph break (\n\n instead of 
+a space) if EITHER:
+  (a) Previous line ends with terminal punctuation .!?…  
+      AND next line starts with a capital letter  
+      [existing rule]
+  
+  OR  
+  
+  (b) Previous line is "title-shaped" — meaning ALL of:
+      - Length < 60 characters
+      - Does NOT end with terminal punctuation .!?…
+      - Next line starts with a capital letter
+      - Previous line is significantly shorter than the average 
+        line length on the page (e.g. < 70% of average)
+
+Rule (b) catches chapter titles, headings, and section labels 
+without falsely triggering on regular sentences that happen to be 
+short.
+
+Test cases to verify:
+- "Chapter 1\nOnce upon a time..." → should become "Chapter 1\n\nOnce upon a time..."
+- "INTRODUCTION\nThe book begins..." → "INTRODUCTION\n\nThe book begins..."
+- A short legitimate sentence at the end of a paragraph followed by 
+  another sentence on a new line → should NOT trigger rule (b) 
+  because line lengths similar
+- A short line ending with "." followed by capital → already 
+  handled by rule (a), no change
+
+═══════════════════════════════════════════════════════════════
+BUG 2 — DEVICE NAME APPEARING IN SCANNED OUTPUT
+═══════════════════════════════════════════════════════════════
+
+User's phone is an Honor Pro 400. After scanning, the text "Honor 
+Pro 400" is appearing appended to the end of the OCR output.
+
+This is the phone's device name. The OCR plugin reads a captured 
+image; it does not read the live camera HUD or system UI. So this 
+is NOT coming from the OCR plugin reading something on screen — it 
+is being injected into the output by Dexy's own code.
+
+DIAGNOSTIC — search the codebase BEFORE making changes:
+
+1. grep/search for any use of:
+   - navigator.userAgent
+   - @capacitor/device, Device.getInfo(), device.name, device.model
+   - Anything reading device/platform info anywhere near the scan 
+     pipeline (runOCR.js, ScanSection.jsx, OCR utilities, App.jsx)
+
+2. Search for any console.log or debug print that gets concatenated 
+   into a state value rather than just logged
+
+3. Check the order of operations in runOCR.js — is any device info 
+   accidentally being included in the array that gets joined with 
+   \n? Maybe a debug header line ("OCR run from {device.name}") that 
+   was meant to be a comment but is being concatenated?
+
+4. Check Tesseract.js init — some setups log device info into the 
+   text output as a header
+
+Report findings BEFORE fixing:
+- Where in the code device name is being read/injected
+- Whether it's intentional (debug helper) or accidental
+- Which file/line needs the fix
+
+═══════════════════════════════════════════════════════════════
+
+Fix BUG 1 directly. Diagnose BUG 2 first, report, then fix.
+
+Do NOT touch the paste path. Do NOT refactor unrelated code. Do 
+NOT change the existing rule (a) of the paragraph heuristic — 
+only ADD rule (b).
