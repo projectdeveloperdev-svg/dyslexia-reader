@@ -161,6 +161,22 @@ function ScanSection() {
     }
   }
 
+  // Paste-specific path: preserve paragraph breaks, don't apply OCR noise rules.
+  function handlePasteResult(raw) {
+    if (!raw || !raw.trim()) {
+      setStatus("error");
+      return;
+    }
+    const cleaned = raw
+      .replace(/\n{3,}/g, "\n\n")   // 3+ blank lines → single paragraph break
+      .replace(/\n(?!\n)/g, " ")     // single newlines → space (rejoin wrapped lines)
+      .replace(/ {2,}/g, " ")        // collapse multiple spaces
+      .trim();
+    setText(cleaned);
+    setStatus("done");
+    if (autoRead) autoReadPendingRef.current = true;
+  }
+
   function handleError() {
     setStatus("error");
     setText("");
@@ -200,7 +216,7 @@ function ScanSection() {
           onError={handleError}
           onReset={handleReset}
         />
-        <PasteInput onResult={handleResult} onReset={handleReset} />
+        <PasteInput onResult={handlePasteResult} onReset={handleReset} />
       </div>
 
       {status === "loading" && (

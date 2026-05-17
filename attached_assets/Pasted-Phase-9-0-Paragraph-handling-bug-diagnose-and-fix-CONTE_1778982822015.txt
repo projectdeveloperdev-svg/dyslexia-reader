@@ -1,0 +1,43 @@
+Phase 9.0 — Paragraph handling bug: diagnose and fix
+
+CONTEXT
+Dexy is a TTS+OCR reading app for dyslexic users. When users paste text into the app, paragraph breaks (\n\n) are being stripped — the text renders as a single wall. We've confirmed via diagnostic that this is NOT an OCR issue: pasting a Wikipedia article (which contains real paragraph breaks) into the app produces a wall of text. So the bug lives in the paste-handling or rendering path, not in Tesseract.
+
+GOAL
+Preserve \n\n paragraph breaks from paste input all the way through to the rendered reader view, so dyslexic users see properly spaced paragraphs and TTS pauses naturally between them.
+
+DIAGNOSTIC STEPS — do these in order, report findings before fixing
+
+1. Find the paste entry point. Locate the component that receives pasted text (likely a <textarea>, contenteditable div, or input field). Search for onPaste, onChange, paste, clipboard across the codebase.
+
+2. Log the raw paste. Add a temporary console.log of the raw clipboard text at the very first handler that receives it. Confirm \n\n is present in the raw input.
+
+3. Trace the value through state. Follow the text from the paste handler → component state → wherever it's stored or transformed. At each step, log whether \n\n survives. There are three likely culprits:
+   (a) A handler is normalising whitespace — e.g. .replace(/\n/g, ' '), .replace(/\s+/g, ' '), .trim() applied to the full string, or a "clean OCR output" function being run on paste input too.
+   (b) The render element is collapsing whitespace — e.g. a <div> or <p> displaying the text without white-space: pre-wrap (or pre-line) in CSS. Default HTML collapses consecutive whitespace including newlines.
+   (c) The TTS pipeline is flattening before speaking — text stored correctly in state but joined/normalised when passed to the speech engine.
+
+4. Identify which of (a), (b), (c) is the bug. Report back which one(s) before applying the fix.
+
+FIX
+
+- If (a): remove or refine the normalisation. Keep collapsing of single newlines if needed (OCR often has spurious line breaks mid-sentence), but preserve \n\n as paragraph markers. A safe pattern: text.replace(/\n(?!\n)/g, ' ').replace(/\n{3,}/g, '\n\n') — single newlines become spaces, double-plus newlines become exactly one paragraph break.
+- If (b): set white-space: pre-wrap (or pre-line) on the rendering element so newlines display. Add margin-bottom or paragraph-spacing CSS so paragraphs read visually distinct.
+- If (c): ensure the TTS function receives the same string the user sees. Most speech engines pause naturally at \n\n or at period+newline; don't strip them.
+
+Also check: the OCR path probably DOES need its own different normalisation (Tesseract output has noisy line breaks mid-sentence). Make sure your fix to the paste path doesn't accidentally also "fix" the OCR path in a way that breaks it. If they share a cleanText() function, split them — paste-clean vs ocr-clean are different jobs.
+
+VERIFICATION
+
+1. Paste a two-paragraph Wikipedia intro → reader shows two visually distinct paragraphs with vertical spacing.
+2. Scan a page with OCR → still renders cleanly (no regression on the OCR path).
+3. Press Play on the two-paragraph text → TTS pauses noticeably between paragraphs.
+4. Copy Text button (Phase 9.1, if already built) → pasting the copied result into another app preserves the paragraph breaks.
+
+DO NOT
+- Don't refactor unrelated code.
+- Don't add new features.
+- Don't touch the OCR/Tesseract path unless step 4 fails.
+- Don't add config options or settings for this — it should just work.
+
+Report diagnostic findings (which of a/b/c) before applying the fix.

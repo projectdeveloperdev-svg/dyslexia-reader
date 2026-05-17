@@ -1,3 +1,7 @@
+.ocr-result-box {
+  white-space: pre-line;
+}
+
 .word-span {
   display: inline;
   padding: 0.1em 0.15em;
