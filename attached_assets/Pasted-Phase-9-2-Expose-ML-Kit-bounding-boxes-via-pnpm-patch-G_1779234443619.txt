@@ -1,0 +1,64 @@
+Phase 9.2 — Expose ML Kit bounding boxes via pnpm patch
+Goal: extend @jcesarmobile/capacitor-ocr v0.3.0 to return bounding box coordinates for each recognised line of text, using pnpm patch so the change is contained in our repo and survives pnpm install.
+Context: diagnostic confirmed Case B — the plugin already receives boundingBox data from ML Kit natively (every Text.Line has .getBoundingBox() returning a Rect), but discards it before sending results to JS. We need to add four integer fields per line (left, top, right, bottom) and update the TS definitions to match. This patch is the foundation for reading-order sorting, bleed-through filtering, and paragraph reconstruction — but those are later phases. This phase only exposes the data; it does not yet use it.
+Tasks, in order:
+
+Create the patch workspace. Run pnpm patch @jcesarmobile/capacitor-ocr@0.3.0 from artifacts/dyslexia-reader/. Report the temporary path pnpm prints — that's where the editable copy lives.
+Modify the native Android code. Open <temp-path>/android/src/main/java/com/jcesarmobile/capacitor/ocr/OcrPlugin.java. Find the loop that builds the observation JSObject (it currently puts text and confidence). Inside that same loop, before resultsArray.put(observation), add a nested boundingBox JSObject with four integer fields read from line.getBoundingBox():
+
+java   android.graphics.Rect box = line.getBoundingBox();
+   if (box != null) {
+       JSObject bb = new JSObject();
+       bb.put("left", box.left);
+       bb.put("top", box.top);
+       bb.put("right", box.right);
+       bb.put("bottom", box.bottom);
+       observation.put("boundingBox", bb);
+   }
+The null check matters — ML Kit can return null in edge cases and a crash here would kill the scan.
+
+Update the TS definitions. In the same temp path, find src/definitions.ts (or wherever RecognitionResult is declared). Extend the interface:
+
+typescript   interface BoundingBox {
+       left: number;
+       top: number;
+       right: number;
+       bottom: number;
+   }
+   interface RecognitionResult {
+       text: string;
+       confidence: number;
+       boundingBox?: BoundingBox;
+   }
+The ? matters — keeps the type compatible with the null case in the native code.
+
+Commit the patch. Run pnpm patch-commit <temp-path>. This should:
+
+Generate a .patch file under patches/ in the project root
+Add a pnpm.patchedDependencies entry to package.json
+
+Report both — confirm the patch file exists and the package.json entry is correct.
+Verify the patch applies cleanly. Delete node_modules/, run pnpm install, and confirm pnpm reports the patch was applied without conflicts. Then check that the native file in node_modules/.pnpm/@jcesarmobile+capacitor-ocr@0.3.0_.../android/src/main/java/com/jcesarmobile/capacitor/ocr/OcrPlugin.java contains the new bounding box code.
+Sync and build. Run npx cap sync android, then build for the device. The app should compile and run exactly as before — no behaviour change yet, since runOCR.js isn't reading the new field.
+Smoke test the data is flowing. Add a single console.log in runOCR.js (or wherever the OCR result is received) that logs the first result's boundingBox field after a scan. Run a scan on the device, open Chrome DevTools remote inspect, confirm the bounding box appears in the console with sensible integer values (e.g. { left: 42, top: 118, right: 893, bottom: 156 }).
+Remove the console.log. Once confirmed, delete it. We don't ship debug logs.
+
+What NOT to do:
+
+Don't modify runOCR.js to use the bounding box data for anything yet (sorting, filtering, paragraph detection — all later phases)
+Don't edit node_modules/ directly — only via the pnpm patch workflow
+Don't change the existing text or confidence fields
+Don't add cornerPoints, block-level grouping, or element-level data — line-level boundingBox is all this phase needs
+Don't fork the plugin to a separate repo — patch only
+Don't bump the plugin version
+
+Definition of done:
+
+patches/@jcesarmobile__capacitor-ocr@0.3.0.patch exists and is committed
+package.json has the pnpm.patchedDependencies entry committed
+Fresh pnpm install applies the patch without errors
+A scan on the device returns bounding box data, verified via console log (then removed)
+App behaviour is otherwise unchanged
+Nothing in runOCR.js consumes the new field yet
+
+Report back with: the patch file path, the package.json diff, and a sample bounding box from the smoke test.
