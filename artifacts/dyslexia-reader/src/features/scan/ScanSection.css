@@ -10,7 +10,7 @@
   z-index: 1;
 }
 
-@media (min-width: 600px) {
+@media (min-width: 960px) {
   .scan-section {
     max-width: 1200px;
   }
