@@ -1,0 +1,59 @@
+diff --git a/android/src/main/java/com/jcesarmobile/capacitor/ocr/OcrPlugin.java b/android/src/main/java/com/jcesarmobile/capacitor/ocr/OcrPlugin.java
+index c18e18071b90a3165f2d8860510ac6b6e32caa76..1500fdb12a3971ecbd30630a04e903f37f6799a4 100644
+--- a/android/src/main/java/com/jcesarmobile/capacitor/ocr/OcrPlugin.java
++++ b/android/src/main/java/com/jcesarmobile/capacitor/ocr/OcrPlugin.java
+@@ -2,6 +2,7 @@ package com.jcesarmobile.capacitor.ocr;
+ 
+ import android.graphics.Bitmap;
+ import android.graphics.BitmapFactory;
++import android.graphics.Rect;
+ import android.net.Uri;
+ import android.util.Base64;
+ import com.getcapacitor.JSArray;
+@@ -53,6 +54,15 @@ public class OcrPlugin extends Plugin {
+                             var observation = new JSObject();
+                             observation.put("text", line.getText());
+                             observation.put("confidence", line.getConfidence());
++                            Rect box = line.getBoundingBox();
++                            if (box != null) {
++                                JSObject bb = new JSObject();
++                                bb.put("left", box.left);
++                                bb.put("top", box.top);
++                                bb.put("right", box.right);
++                                bb.put("bottom", box.bottom);
++                                observation.put("boundingBox", bb);
++                            }
+                             resultsArray.put(observation);
+                         }
+                     }
+diff --git a/dist/esm/definitions.d.ts b/dist/esm/definitions.d.ts
+index 81f12267058a2a46ccd47bc8b11be377f232444f..64f0c55e5f2bf151c8736676d369db74f56e0bc4 100644
+--- a/dist/esm/definitions.d.ts
++++ b/dist/esm/definitions.d.ts
+@@ -6,6 +6,12 @@ export interface RecognitionResults {
+      */
+     results: RecognitionResult[];
+ }
++export interface BoundingBox {
++    left: number;
++    top: number;
++    right: number;
++    bottom: number;
++}
+ export interface RecognitionResult {
+     /**
+      * The recognized text.
+@@ -19,6 +25,13 @@ export interface RecognitionResult {
+      * @since 0.0.1
+      */
+     confidence: number;
++    /**
++     * Bounding box of the recognised line in image pixel coordinates.
++     * Null if ML Kit returned no bounding box for this line (edge case).
++     *
++     * @since 0.3.0-patch
++     */
++    boundingBox?: BoundingBox;
+ }
+ export interface OcrPlugin {
+     /**

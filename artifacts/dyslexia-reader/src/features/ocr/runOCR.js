@@ -20,6 +20,9 @@ export async function runOCR(imageUrl) {
     "[runOCR] raw results (" + results.length + " items):",
     results.map((r) => JSON.stringify(r.text))
   );
+  // Smoke test: confirm bounding box data is flowing from the patched plugin.
+  // Remove once verified on device.
+  console.log("[runOCR] boundingBox smoke test (first result):", results[0].boundingBox);
 
   // Each result is ONE physical text line (confirmed from native source: Android
   // iterates block.getLines(), iOS returns one VNRecognizedTextObservation per line).

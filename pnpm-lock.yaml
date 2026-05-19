@@ -153,6 +153,11 @@ overrides:
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
   esbuild: 0.27.3
 
+patchedDependencies:
+  '@jcesarmobile/capacitor-ocr@0.3.0':
+    hash: 1e7f3544e28e3387880524ebc055788cb31e8ddeecaf8c74f66cb2ef6747e8b8
+    path: patches/@jcesarmobile__capacitor-ocr@0.3.0.patch
+
 importers:
 
   .:
@@ -232,7 +237,7 @@ importers:
         version: 8.3.3
       '@jcesarmobile/capacitor-ocr':
         specifier: ^0.3.0
-        version: 0.3.0(@capacitor/core@8.3.3)
+        version: 0.3.0(patch_hash=1e7f3544e28e3387880524ebc055788cb31e8ddeecaf8c74f66cb2ef6747e8b8)(@capacitor/core@8.3.3)
     devDependencies:
       '@capacitor/cli':
         specifier: ^8.3.3
@@ -3756,7 +3761,7 @@ snapshots:
     dependencies:
       minipass: 7.1.3
 
-  '@jcesarmobile/capacitor-ocr@0.3.0(@capacitor/core@8.3.3)':
+  '@jcesarmobile/capacitor-ocr@0.3.0(patch_hash=1e7f3544e28e3387880524ebc055788cb31e8ddeecaf8c74f66cb2ef6747e8b8)(@capacitor/core@8.3.3)':
     dependencies:
       '@capacitor/core': 8.3.3
 
