@@ -1,0 +1,32 @@
+Phase 9.2 — OCR plugin bounding box diagnostic
+Goal: find out whether the current OCR setup gives us access to bounding box (position) data for each piece of recognised text, and if not, what it would take to expose it.
+Context: Dexy uses on-device ML Kit for OCR via a Capacitor plugin. The native ML Kit API returns bounding boxes for every text element (block, line, and symbol level) — but we don't know whether our current plugin surfaces this data to the JS layer, or just returns concatenated text. We need this data to sort reading order, filter bleed-through by position and confidence, and reconstruct paragraph breaks from vertical gaps.
+Tasks, in order:
+
+Identify the OCR plugin currently in use. Check package.json and capacitor.config.* for the plugin name and version. Report what it is.
+Locate the plugin's source — either in node_modules/ or a custom native module in android/ if we've forked or written our own. Report the path.
+Read the plugin's TypeScript definitions (.d.ts or equivalent). Report the exact shape of what the OCR call currently returns to JS. Paste the type/interface.
+Read the plugin's native Android code (Kotlin or Java, usually under android/src/main/java/...). Find where it calls ML Kit's TextRecognizer and where it builds the response sent back to JS. Report:
+
+What ML Kit returns natively (the Text object has textBlocks, each with lines, each with elements, each with a boundingBox and cornerPoints — confirm this is what's being received)
+What the plugin currently extracts from that and passes to JS
+Specifically: is bounding box data being thrown away at the native layer, or is it being received but not exposed in the JS interface?
+
+
+Based on findings, classify into one of three cases:
+
+Case A: Plugin already returns bounding boxes, we're just not using them in the JS layer. Easy win.
+Case B: Plugin receives bounding boxes natively but flattens to text before returning to JS. Needs plugin modification — moderate work, single file changes likely.
+Case C: Plugin doesn't expose what we need and can't easily be modified (e.g. third-party, no source access). Need to fork, replace, or write a custom Capacitor plugin. Larger work.
+
+
+Report findings. Do not write any implementation code yet. The output of this diagnostic determines whether the next step is a 30-minute JS change or a multi-session native plugin build.
+
+What NOT to do:
+
+Don't modify any code yet
+Don't install new plugins
+Don't refactor the existing OCR call site
+Don't speculate about ML Kit features beyond what's needed for bounding boxes (confidence scores per element, language detection, etc — those are separate questions for later)
+
+Report back with the findings from steps 1–5 and the classification (A, B, or C).
