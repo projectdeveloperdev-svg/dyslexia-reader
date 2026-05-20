@@ -1,0 +1,87 @@
+Bug fix: column gap detection picks the wrong gap on real pages.
+
+DIAGNOSIS (from device logs, two separate scans of Tucker A&P)
+
+Scan 1:
+  midX values: [..., 957, 1058, 1421, 1470, 1725, 1872, ..., 2513, 3061]
+  largest gap: 548 between midX=2513 and midX=3061
+  splitX=2787, pageWidth=3074
+  column counts — left: 48, right: 1, spanning: 14
+
+Scan 2:
+  midX values: [..., 1115, 1159, 1561, 1575, ..., 2309, 3030, 3038, ..., 3056]
+  largest gap: 722 between midX=2309 and midX=3030
+  splitX=2669, pageWidth=3084
+  column counts — left: 40, right: 7, spanning: 23
+
+ROOT CAUSE
+The "largest gap anywhere" rule grabs the gap between right-column body
+text and stray lines floating off the right edge of the page (around
+x=3030+). The real column gutter sits between roughly 1100 and 2100 in
+midX — i.e. near the centre of the page — but it's a noisier region
+with indented or partial lines, so its largest single gap is smaller
+than the edge-stragglers gap.
+
+Result: splitX is placed way out to the right, almost everything ends
+up in the "left" bucket, and the rest gets tagged as spanning.
+
+FIX (Option B — agreed with user)
+Search for the column gap only in the MIDDLE of the page.
+
+1. Define a search band: midX between 30% and 70% of pageWidth.
+2. Among the sorted midX values, look at ONLY adjacent pairs where
+   BOTH values fall inside the search band.
+3. Find the largest gap among those pairs.
+4. If that gap > 10% of pageWidth, treat as two-column.
+   splitX = midpoint of that gap.
+5. Otherwise, single-column.
+
+This makes detection ignore edge outliers automatically — they sit
+outside 30–70% and never enter the gap search.
+
+KEEP everything else as it is:
+- isSpanning logic — unchanged
+- single-column fallback — unchanged
+- missing-boundingBox fallback — unchanged
+- runOCR.js — untouched (still one import + one call)
+- cleanText.js — untouched
+
+UPDATE the existing diagnostic logs:
+- Existing log [readingOrder] midX values sorted: [...] — keep
+- Existing log [readingOrder] largest gap: <gap> between midX=<a> and midX=<b> — keep, but it now reports the largest gap WITHIN the band
+- Existing log [readingOrder] gap as % of pageWidth: <value> — keep
+- ADD a new log line BEFORE the gap log:
+  [readingOrder] search band: <lo> to <hi> (30%–70% of pageWidth=<value>)
+- ADD a new log line if no qualifying pair is found in the band:
+  [readingOrder] no in-band gap found — falling back to single-column
+
+WHAT NOT TO DO
+- Do NOT also add the "both sides need 3+ lines" sanity check.
+  That's parked. One change at a time.
+- Do NOT touch spanning detection.
+- Do NOT touch runOCR.js or cleanText.js.
+- Do NOT add "while I'm here" cleanups (L56).
+- Do NOT remove the existing diagnostic logs.
+
+FILES TOUCHED
+- src/features/ocr/readingOrder.js only.
+
+DELIVERABLES
+1. Show me the diff of detectColumns before doing anything else.
+   Wait for my approval.
+2. After approval: implement, build clean, commit, push.
+3. Commit message: "fix: search column gap only in middle 30–70% of pageWidth"
+4. Short status summary:
+   ✅ done
+   ⚠️ risky/unfinished
+   ➡️ what to test on phone
+
+TEST PLAN (FOR ME, NOT YOU)
+1. Re-scan Tucker A&P two-column page.
+2. Expect:
+   - search band log around 922–2152 (for pageWidth ≈ 3074)
+   - largest gap inside the band (roughly between 1100 and 2100 area)
+   - splitX somewhere in the centre of the page
+   - column counts roughly balanced (target: left and right each
+     20+ lines, spanning a handful)
+3. Re-scan single-column novel page — should still detect single-column.
