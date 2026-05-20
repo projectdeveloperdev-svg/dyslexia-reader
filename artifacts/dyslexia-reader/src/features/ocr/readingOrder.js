@@ -120,13 +120,18 @@ function detectColumns(results, pageWidth) {
 }
 
 /**
- * Returns true if the line's bounding box crosses the column divide —
- * i.e. it starts left of splitX and ends right of splitX.
+ * Returns true if the line is genuinely wide — more than 60% of pageWidth.
+ * This catches full-width headings/banners while leaving normal column body
+ * lines (typically ~24% of pageWidth) unaffected.
+ *
+ * Replaces the old edge-crossing check (left < splitX && right > splitX),
+ * which incorrectly flagged left-column lines whose right edge just barely
+ * passed splitX.
  *
  * Pure — safe to unit-test.
  */
-function isSpanning(line, splitX) {
-  return line.boundingBox.left < splitX && line.boundingBox.right > splitX;
+function isSpanning(line, pageWidth) {
+  return (line.boundingBox.right - line.boundingBox.left) > pageWidth * 0.6;
 }
 
 /**
@@ -174,11 +179,16 @@ export function sortReadingOrder(results) {
   const spanning = [];
   const leftCol = [];
   const rightCol = [];
+  const spanThreshold = pageWidth * 0.6;
 
   for (const line of results) {
-    if (isSpanning(line, layout.splitX)) {
+    if (isSpanning(line, pageWidth)) {
       console.log(
-        "[readingOrder] spanning line: " +
+        "[readingOrder] spanning line (width=" +
+          Math.round(line.boundingBox.right - line.boundingBox.left) +
+          ", threshold=" +
+          Math.round(spanThreshold) +
+          "): " +
           JSON.stringify(line.text) +
           " (y=" +
           line.boundingBox.top +
