@@ -55,11 +55,18 @@ function detectColumns(results, pageWidth) {
   const midXValues = results.map(getMidX).sort((a, b) => a - b);
   const threshold = pageWidth * 0.1;
 
+  // Search band: only look for the column gap in the middle 30–70% of the page.
+  // Edge outliers (page numbers, stray annotations) sit outside this band and
+  // would otherwise steal the "largest gap" crown from the real gutter.
+  const bandLo = pageWidth * 0.3;
+  const bandHi = pageWidth * 0.7;
+
   let largestGap = 0;
   let gapLeft = 0;
   let gapRight = 0;
 
   for (let i = 1; i < midXValues.length; i++) {
+    if (midXValues[i - 1] < bandLo || midXValues[i] > bandHi) continue;
     const gap = midXValues[i] - midXValues[i - 1];
     if (gap > largestGap) {
       largestGap = gap;
@@ -74,6 +81,23 @@ function detectColumns(results, pageWidth) {
       midXValues.map((v) => Math.round(v)).join(", ") +
       "]"
   );
+  console.log(
+    "[readingOrder] search band: " +
+      Math.round(bandLo) +
+      " to " +
+      Math.round(bandHi) +
+      " (30%–70% of pageWidth=" +
+      Math.round(pageWidth) +
+      ")"
+  );
+
+  if (largestGap === 0) {
+    console.log(
+      "[readingOrder] no in-band gap found — falling back to single-column"
+    );
+    return { type: "single" };
+  }
+
   console.log(
     "[readingOrder] largest gap: " +
       Math.round(largestGap) +
