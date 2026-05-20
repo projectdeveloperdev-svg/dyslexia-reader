@@ -1,0 +1,91 @@
+Feature: Reading-order sorting for multi-column OCR scans.
+
+BACKGROUND
+- Phase 9.2 bounding-box patch is live. ML Kit now returns
+  { text, confidence, boundingBox: {left, top, right, bottom} } per line.
+- ML Kit returns lines roughly top-to-bottom across the FULL page width.
+- On two-column book pages this interleaves the columns — left line 1,
+  right line 1, left line 2, right line 2 — producing gibberish.
+- Test page: a two-column textbook spread (Anatomy & Physiology, 5th edition,
+  Tucker). Real prose. Already scanned. Output currently splices column 2
+  text into the middle of column 1 sentences.
+
+GOAL
+Detect columns from bounding-box x-positions, sort lines within each column
+top-to-bottom, then concatenate left column → right column to produce correct
+reading order BEFORE paragraph detection runs.
+
+DIAGNOSE BEFORE FIXING (per project rules)
+1. Find where OCR lines are merged into final text. Likely in cleanText() or
+   wherever runOCR.js output is consumed downstream.
+2. Show me that location BEFORE writing any code. Confirm with me that's
+   the right place to insert the column-sort step.
+3. Wait for my approval before proceeding.
+
+PLAN — implement after approval, in this order
+
+Step 1: Column detection
+- Input: array of lines, each with boundingBox {left, top, right, bottom}.
+- Compute the horizontal midpoint of each line: (left + right) / 2.
+- Cluster midpoints. If they fall into two distinct groups with a clear
+  gap between the maximum of the left cluster and the minimum of the right
+  cluster (gap > 10% of total page width), treat as two-column.
+- Otherwise, treat as single-column (fallback — must not break existing
+  single-column scans).
+- Log the detected layout: "[readingOrder] detected: single-column" or
+  "[readingOrder] detected: two-column, split at x=<value>".
+
+Step 2: Spanning-heading detection
+- After column split is identified, scan lines for "spanning" lines —
+  any line whose bounding box width exceeds the column gap (i.e. spans
+  across the column divide).
+- These are typically large headings ("TOPIC 3: ACIDS, ALKALIS AND THE
+  pH SCALE" in the test page).
+- Tag them as spanning. They belong above the columns in reading order.
+- Log: "[readingOrder] spanning line: '<text>' (y=<top>)".
+
+Step 3: Sort and concatenate
+- Single-column: sort all lines by top (ascending). Done.
+- Two-column:
+  a) Spanning lines first, sorted by top.
+     (For v1, all spanning lines go above both columns. We tune later
+      if a spanning heading appears between body paragraphs.)
+  b) Then left column lines, sorted by top.
+  c) Then right column lines, sorted by top.
+- Concatenate in that order. Pass the result to the existing paragraph
+  detection (don't change paragraph detection in this task).
+
+Step 4: Diagnostic logging
+- Log column count detected, split x-coordinate (if two-column), number
+  of spanning lines, and lines-per-column counts.
+- Prefix logs with [readingOrder] so they're easy to grep.
+- Logs stay in for tuning. We will remove them together when this phase
+  is signed off (same pattern as the Phase 9.2 smoke-test log).
+
+WHAT NOT TO DO
+- Do NOT touch paragraph detection logic.
+- Do NOT touch the OCR plugin or runOCR.js itself — work on the consumer.
+- Do NOT add 3+ column support. Out of scope.
+- Do NOT add "while I'm here" cleanups (L56).
+- Do NOT change anything that affects single-column scans except as a
+  fallback path. Single-column behaviour must be preserved exactly.
+
+FILES YOU'LL LIKELY TOUCH
+- Whatever consumes runOCR.js output (probably cleanText or similar).
+- Possibly a new small file like readingOrder.js for the sort logic
+  (keep parsing in one place — same principle as voiceLabel.js, L36).
+
+DELIVERABLES
+1. Diagnosis output (where the fix goes, confirmed with me).
+2. After my approval: the code change, kept minimal.
+3. Commit message: "feat: column-aware reading order for multi-column scans"
+4. A short status summary at the end:
+   ✅ what's done
+   ⚠️ what's risky or unfinished
+   ➡️ what I should test on phone
+
+TEST PLAN (FOR ME, NOT YOU)
+1. Two-column textbook page (Tucker A&P) — column 1 then column 2,
+   spanning heading at top.
+2. Single-column novel page — must be unchanged.
+3. Logs visible in chrome://inspect DevTools console.
