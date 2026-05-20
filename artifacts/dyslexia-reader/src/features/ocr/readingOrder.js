@@ -221,9 +221,13 @@ export function sortReadingOrder(results) {
 
   const byTop = (a, b) => a.boundingBox.top - b.boundingBox.top;
 
-  return [
+  const sorted = [
     ...spanning.sort(byTop),
     ...leftCol.sort(byTop),
     ...rightCol.sort(byTop),
   ];
+
+  console.log('[readingOrder] OUTPUT first 6 lines:', sorted.slice(0, 6).map(l => l.text));
+
+  return sorted;
 }
