@@ -1,0 +1,103 @@
+Bug fix: isSpanning is too aggressive — most body lines get tagged as
+spanning when they're really just normal column lines.
+
+DIAGNOSIS (from device logs, latest scan)
+
+Search band fix from previous round worked correctly:
+  search band: 882 to 2058 (30%–70% of pageWidth=2940)
+  largest gap: 379 between midX=1180 and midX=1559
+  splitX=1369, pageWidth=2940
+
+splitX (1369) is correctly between the two real columns. Good.
+
+But column counts came back as:
+  column counts — left: 4, right: 29, spanning: 28
+
+Many lines that are clearly left-column body text (e.g.
+"this charged state the atom is called an ion. These" at y=38) are
+being flagged as spanning.
+
+ROOT CAUSE
+isSpanning currently returns true if a line's bounding box crosses
+splitX — specifically left < splitX AND right > splitX.
+
+Real left-column body lines on a 2940-pixel page are roughly 700 pixels
+wide. With splitX at 1369, a line whose left edge is around 700 will
+have its right edge around 1400 — just barely past splitX. So almost
+every left-column line trips the spanning check.
+
+Column assignment is using the wrong signal: bounding-box edges instead
+of where the line actually lives.
+
+FIX (Option D — agreed with user)
+Change column assignment to be based on midX (line midpoint), and
+narrow the definition of "spanning" to mean lines that genuinely span
+most of the page width.
+
+NEW RULES:
+1. After splitX is determined, assign each line as follows:
+     - If midX < splitX → left column
+     - If midX > splitX → right column
+     - Spanning is NOT detected via column-edge crossing anymore.
+2. A separate, narrower spanning check:
+     - A line is spanning if (boundingBox.right - boundingBox.left) >
+       0.6 * pageWidth.
+     - This catches genuine full-width headings/banners (like
+       "TOPIC 3: ACIDS, ALKALIS AND THE pH SCALE") which are 60%+ of
+       the page width.
+     - Normal column body lines are ~24% of pageWidth (700 / 2940) and
+       won't trip this.
+3. Spanning lines are still placed above the columns in reading order
+   (sorted by top), as before.
+
+ORDER OF OPERATIONS in sortReadingOrder (for two-column case):
+  a) For every line: check spanning by WIDTH first.
+     - If spanning, add to spanning bucket.
+     - If not, fall through to step b.
+  b) Non-spanning lines: assign by midX to left or right bucket.
+  c) Sort each bucket by top.
+  d) Output: spanning (top-sorted) → left → right.
+
+KEEP everything else as it is:
+- Column detection (band-restricted largest gap) — unchanged
+- Single-column path — unchanged
+- Missing-boundingBox fallback — unchanged
+- All existing diagnostic logs — unchanged
+- runOCR.js — untouched
+- cleanText.js — untouched
+
+LOG CHANGE
+The existing log line is currently something like:
+  [readingOrder] spanning line: "<text>" (y=<value>)
+
+Update it to include the trigger reason so we can tell width-based
+spanning from any future variant:
+  [readingOrder] spanning line (width=<W>, threshold=<0.6 * pageWidth>):
+  "<text>" (y=<value>)
+
+WHAT NOT TO DO
+- Do NOT change column detection. splitX is now correct, leave it.
+- Do NOT add other tweaks while in here (L56).
+- Do NOT touch runOCR.js or cleanText.js.
+
+FILES TOUCHED
+- src/features/ocr/readingOrder.js only.
+- Specifically: isSpanning function (rewritten to width-based), and
+  sortReadingOrder (updated to assign by midX).
+
+DELIVERABLES
+1. Show me the diff of isSpanning AND the relevant part of
+   sortReadingOrder before building. Wait for my approval.
+2. After approval: implement, build clean.
+3. Commit message: "fix: assign columns by midX; detect spanning by width (>60% pageWidth)"
+4. Status summary at the end.
+
+TEST PLAN (FOR ME, NOT YOU)
+1. Re-scan Tucker A&P two-column page.
+2. Expect:
+   - splitX still ≈ 1369
+   - column counts roughly balanced (left ~25–30, right ~25–30,
+     spanning ~3 — just the big TOPIC 3 heading lines)
+   - Output text reads left column top-to-bottom THEN right column
+     top-to-bottom
+3. Re-scan single-column novel page — single-column behaviour unchanged.
