@@ -1,0 +1,68 @@
+Bug fix: reading-order column detection is too strict.
+
+DIAGNOSIS (from device logs)
+On a real two-column textbook page (Tucker A&P), detectColumns logged:
+  [readingOrder] WARN: >2 x-clusters detected — falling back to single-column
+  [readingOrder] detected: single-column (62 lines)
+
+ROOT CAUSE
+The current detectColumns counts the number of x-position clusters and
+bails to single-column if it sees more than 2. Real pages have 3+
+clusters because headings, footers, and indented lines sit at different
+x-positions from the main body columns. The "exactly 2 clusters" rule
+is wrong.
+
+FIX (Option A — agreed with user)
+Stop counting clusters. Instead:
+1. Compute midX for every line as before.
+2. Sort the midX values.
+3. Find the LARGEST gap between any two adjacent sorted midX values.
+4. If that gap > 10% of page width, treat it as the column divide.
+   splitX = midpoint of that gap.
+5. Otherwise, single-column.
+
+This means we no longer care how many clusters exist — only whether
+there's a clear gap somewhere. Lines on either side of the gap go to
+left or right column. Spanning detection (already built) handles lines
+that cross the gap, e.g. the big TOPIC 3 heading.
+
+REMOVE the ">2 clusters" warning and fallback. They were based on a
+wrong assumption.
+
+ADD diagnostic logging (we'll remove with the others when this phase
+is signed off):
+  [readingOrder] midX values sorted: [<list>]
+  [readingOrder] largest gap: <value> between midX=<a> and midX=<b>
+  [readingOrder] gap as %% of pageWidth: <value>
+
+The existing logs stay:
+  [readingOrder] detected: two-column, splitX=<value>, pageWidth=<value> (<N> lines)
+  [readingOrder] detected: single-column (<N> lines)
+  [readingOrder] spanning line: ...
+  [readingOrder] column counts — left: ..., right: ..., spanning: ...
+
+WHAT NOT TO DO
+- Do NOT touch the spanning-detection logic. It's correct.
+- Do NOT touch runOCR.js. The one import + one call stays as-is.
+- Do NOT touch cleanText.js.
+- Do NOT change the missing-boundingBox fallback (single-column,
+  original order, warn). That's correct.
+- Do NOT add "while I'm here" cleanups (L56).
+
+FILES TOUCHED
+- src/features/ocr/readingOrder.js only.
+
+DELIVERABLES
+1. Show me the diff of detectColumns before writing any other changes.
+2. Build clean.
+3. Status summary at the end:
+   ✅ done
+   ⚠️ risky/unfinished
+   ➡️ what to test on phone
+
+TEST PLAN (FOR ME, NOT YOU)
+1. Re-scan the Tucker A&P two-column page.
+2. Expect [readingOrder] detected: two-column with a sensible splitX.
+3. Expect column counts roughly balanced (e.g. left: ~25, right: ~25,
+   spanning: ~3 for the big TOPIC 3 heading + footer).
+4. Re-scan a single-column novel page. Behaviour must be unchanged.

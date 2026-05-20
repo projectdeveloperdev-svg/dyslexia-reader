@@ -38,12 +38,12 @@ function getMidX(line) {
 /**
  * Detects whether the page has one or two columns.
  *
- * Sorts all line midX values and counts how many adjacent gaps exceed 10% of
- * pageWidth.
- *   0 gaps → single-column
- *   1 gap  → two-column; splitX is the midpoint of that gap
- *   >1 gap → more than two columns detected; falls back to single-column
- *             with a warning (3-column pages are out of scope)
+ * Sorts all line midX values and finds the LARGEST gap between any two
+ * adjacent values. If that gap exceeds 10% of pageWidth, the midpoint of
+ * that gap is the column divide. Otherwise single-column.
+ *
+ * No cluster counting — real pages have many x-clusters (indented lines,
+ * headers, footers) so counting clusters causes false single-column fallbacks.
  *
  * Returns { type: 'single' } or { type: 'two', splitX: number }.
  *
@@ -55,29 +55,44 @@ function detectColumns(results, pageWidth) {
   const midXValues = results.map(getMidX).sort((a, b) => a - b);
   const threshold = pageWidth * 0.1;
 
-  const significantGaps = [];
+  let largestGap = 0;
+  let gapLeft = 0;
+  let gapRight = 0;
+
   for (let i = 1; i < midXValues.length; i++) {
     const gap = midXValues[i] - midXValues[i - 1];
-    if (gap > threshold) {
-      significantGaps.push({
-        gap,
-        splitX: (midXValues[i - 1] + midXValues[i]) / 2,
-      });
+    if (gap > largestGap) {
+      largestGap = gap;
+      gapLeft = midXValues[i - 1];
+      gapRight = midXValues[i];
     }
   }
 
-  if (significantGaps.length === 0) {
-    return { type: "single" };
+  // Diagnostic — remove with the other [readingOrder] logs when phase is signed off.
+  console.log(
+    "[readingOrder] midX values sorted: [" +
+      midXValues.map((v) => Math.round(v)).join(", ") +
+      "]"
+  );
+  console.log(
+    "[readingOrder] largest gap: " +
+      Math.round(largestGap) +
+      " between midX=" +
+      Math.round(gapLeft) +
+      " and midX=" +
+      Math.round(gapRight)
+  );
+  console.log(
+    "[readingOrder] gap as % of pageWidth: " +
+      Math.round((largestGap / pageWidth) * 100) +
+      "%"
+  );
+
+  if (largestGap > threshold) {
+    return { type: "two", splitX: (gapLeft + gapRight) / 2 };
   }
 
-  if (significantGaps.length > 1) {
-    console.warn(
-      "[readingOrder] WARN: >2 x-clusters detected — falling back to single-column"
-    );
-    return { type: "single" };
-  }
-
-  return { type: "two", splitX: significantGaps[0].splitX };
+  return { type: "single" };
 }
 
 /**
