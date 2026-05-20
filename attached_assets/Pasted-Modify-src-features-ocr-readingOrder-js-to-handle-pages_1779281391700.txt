@@ -1,0 +1,73 @@
+Modify src/features/ocr/readingOrder.js to handle pages with a 
+large mid-page "banner" heading that splits the page into zones.
+
+CONTEXT
+=======
+Current code treats every page as one zone with left/right columns
+plus narrow spanning headings. This breaks on pages where a huge
+heading (e.g. "TOPIC 3: ACIDS, ALKALIS AND THE pH SCALE") sits in
+the middle of the page with two-column content above AND below it.
+
+The correct reading order for such a page is:
+  zone1-left → zone1-right → banner → zone2-left → zone2-right
+
+NEW LOGIC
+=========
+Step 1 — Detect banner lines.
+A "banner" is a line that is BOTH:
+  a) width > 60% of pageWidth (already used for spanning detection)
+  b) line height > 1.8× the median line height of all lines
+
+Use the bounding-box height of each line. If the OCR bounding boxes
+do NOT include height, STOP and tell me — do not invent a fallback.
+
+Only enable banner detection if total lines > 20. For smaller scans,
+skip banner detection entirely.
+
+Step 2 — Split page into zones using banners.
+If no banners: one zone = all lines. Behaves exactly as current code.
+If banners exist: sort banners by y. Each banner creates a zone break.
+  Zone 1 = lines with y < banner[0].y
+  Banner 1 itself
+  Zone 2 = lines with banner[0].y < y < banner[1].y (or end of page)
+  ...etc
+
+Step 3 — Inside each zone, run the EXISTING column detection logic.
+Each zone independently computes its own splitX, leftCol, rightCol,
+and narrow-spanning lines. Use the same band (30%–70% of pageWidth)
+and the same width threshold (>60% of pageWidth) as current code.
+
+Step 4 — Concatenate output.
+For each zone in y-order:
+  ...zone.spanning.sort(byTop),
+  ...zone.leftCol.sort(byTop),
+  ...zone.rightCol.sort(byTop),
+Then the banner line(s) for that boundary.
+Then next zone, etc.
+
+LOGGING
+=======
+Keep ALL existing [readingOrder] logs. Add new logs:
+
+  console.log('[readingOrder] median line height:', medianHeight);
+  console.log('[readingOrder] banners detected:', banners.length, 
+              banners.map(b => ({text: b.text, y: b.y, h: b.height})));
+  console.log('[readingOrder] zones:', zones.length);
+  // For each zone, log its existing per-zone diagnostics:
+  console.log('[readingOrder] zone N: splitX=..., left=..., right=..., spanning=...');
+
+Keep the existing OUTPUT log at the end (first 6 lines of sorted).
+
+RULES
+=====
+- Do NOT touch any other file.
+- Do NOT touch cleanText, runOCR, or anything downstream.
+- Do NOT change the existing column detection logic — reuse it
+  inside each zone. Factor it into a helper if needed (e.g.
+  detectColumnsInZone(lines, pageWidth)).
+- For pages with no banner, the output MUST be identical to current
+  behaviour (zone count = 1, same logs, same order).
+- If the bounding boxes don't include line height, STOP and tell me.
+  Don't invent a fallback.
+
+Show me the diff before declaring done.
