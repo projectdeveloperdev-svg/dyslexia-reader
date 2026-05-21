@@ -1,0 +1,55 @@
+I'd like to implement a hidden Voice Lab screen for tagging TTS voices. Before writing any code, please do a pre-flight check and wait for my approval.
+
+Confirm:
+1. How voices are enumerated in the current voice dropdown (Capacitor TTS plugin? speechSynthesis.getVoices()? Something else?). The Voice Lab must use the same source so voice IDs match the production dropdown 1:1.
+2. The routing setup in use (React Router version, hash vs browser routing, file-based?) so the hidden route is added correctly.
+3. List the files this will create or change.
+4. List any risks.
+5. Show me a 3-step plan.
+
+Wait for my approval before writing code.
+
+---
+
+Spec (for context, do not build yet):
+
+New hidden route at /voice-lab. Not linked from anywhere in the app. Reached by typing the URL.
+
+One row per available TTS voice. Each row has:
+- Voice ID (small, monospace)
+- Display name
+- Language (auto-filled from voice lang, e.g. en-GB, es-ES)
+- ▶ Play button — speaks the sample paragraph through this voice
+- Gender: M / F / Neutral (single-select)
+- Vibe tags (multi-select chips): warm, clear, slow, energetic, soft, deep, bright, flat, robotic, posh, friendly, gravelly, young, mature, accented
+- Notes (single line, optional)
+- Skip toggle (greys out the row, marks as skip)
+
+Sample paragraph (same for every voice):
+"The quiet morning light fell across the table. She picked up the book and started to read, slowly at first, then with more confidence."
+
+Sorting:
+- Group voices by language.
+- English first (en-GB, then en-US, then other English).
+- Then other languages alphabetically.
+
+Other rules:
+- Only one voice plays at a time. Tapping ▶ on a new row stops any currently-playing voice first.
+- Don't auto-play. User taps ▶.
+- Save state to localStorage key dexy.voiceListeningProgress after every change.
+- Restore on mount.
+- Progress counter at top: "12 / 40 tagged".
+- Sticky Export button at bottom. Copies to clipboard in this format:
+  <voiceId> | <displayName> | <lang> | <gender> | <tags> | <notes>
+- Toast confirmation: "Voice list copied to clipboard".
+- "Clear progress" link (with confirm) wipes the localStorage key.
+
+Match existing Dexy styling. Mobile-first. Big tap targets.
+
+Out of scope: name suggestions, editing the main voice dropdown, analytics.
+
+Cleanup note: keep code isolated so route + screen + key can be removed in one commit after 9.3 ships.
+
+---
+
+Pre-flight first. Wait for my approval.
