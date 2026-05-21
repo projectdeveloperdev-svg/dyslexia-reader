@@ -18,6 +18,7 @@ function ScanSection() {
     return localStorage.getItem("dexy-auto-read") === "true";
   });
   const autoReadPendingRef = useRef(false);
+  const pinchRef = useRef({ active: false, startDist: 0, startSize: 0, lastSize: 22 });
   const [fontSize, setFontSize] = useState(() => {
     const stored = localStorage.getItem("dexy-font-size");
     return stored ? parseInt(stored, 10) : 22;
@@ -36,6 +37,39 @@ function ScanSection() {
   function changeFontSize(val) {
     setFontSize(val);
     localStorage.setItem("dexy-font-size", val);
+  }
+
+  function handlePinchStart(e) {
+    if (e.touches.length !== 2) return;
+    const [t1, t2] = e.touches;
+    pinchRef.current = {
+      active: true,
+      startDist: Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY),
+      startSize: fontSize,
+      lastSize: fontSize,
+    };
+  }
+
+  function handlePinchMove(e) {
+    if (!pinchRef.current.active || e.touches.length !== 2) return;
+    const [t1, t2] = e.touches;
+    const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    const ratio = dist / pinchRef.current.startDist;
+    const next = Math.round(
+      Math.min(36, Math.max(14, pinchRef.current.startSize * ratio))
+    );
+    pinchRef.current.lastSize = next;
+    setFontSize(next);
+  }
+
+  function handlePinchEnd() {
+    if (!pinchRef.current.active) return;
+    pinchRef.current.active = false;
+    try {
+      localStorage.setItem("dexy-font-size", pinchRef.current.lastSize);
+    } catch (err) {
+      console.error("localStorage write failed:", err);
+    }
   }
 
   function changeFontFamily(val) {
@@ -230,7 +264,13 @@ function ScanSection() {
 
       {status === "done" && (
         <>
-          <div className="ocr-edit-wrapper">
+          <div
+            className="ocr-edit-wrapper"
+            onTouchStart={handlePinchStart}
+            onTouchMove={handlePinchMove}
+            onTouchEnd={handlePinchEnd}
+            onTouchCancel={handlePinchEnd}
+          >
             {isEditing ? (
               <textarea
                 className="ocr-edit-textarea"
