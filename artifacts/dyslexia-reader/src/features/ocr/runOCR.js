@@ -31,6 +31,41 @@ export async function runOCR(imageUrl) {
         .filter((t) => t && t.trim().length > 0)
         .join("\n")
   );
+  // --- DIAGNOSTIC: capture orientation ---
+  {
+    let orientStr = "no-api";
+    try {
+      orientStr = window.screen.orientation
+        ? window.screen.orientation.type
+        : "no-screen-orientation-api";
+    } catch (e) { orientStr = "error:" + e.message; }
+    const landscape = window.innerWidth > window.innerHeight;
+    console.log(
+      "[runOCR] capture orientation:",
+      "screen.orientation.type=" + orientStr,
+      "| innerWidth=" + window.innerWidth,
+      "innerHeight=" + window.innerHeight,
+      "| inferred=" + (landscape ? "LANDSCAPE" : "PORTRAIT")
+    );
+  }
+
+  // --- DIAGNOSTIC: per-block geometry (before junk filter) ---
+  for (const r of results) {
+    const bb = r.boundingBox;
+    const snippet = (r.text || "").slice(0, 40);
+    if (bb) {
+      const w = bb.right - bb.left;
+      const h = bb.bottom - bb.top;
+      const midX = Math.round((bb.left + bb.right) / 2);
+      const midY = Math.round((bb.top + bb.bottom) / 2);
+      console.log(
+        `[runOCR] block geometry: text="${snippet}" | x=${bb.left} y=${bb.top} w=${w} h=${h} | midX=${midX} midY=${midY}`
+      );
+    } else {
+      console.log(`[runOCR] block geometry: text="${snippet}" | no bounding box`);
+    }
+  }
+
   // Junk-fragment filter — runs BEFORE reading-order sort.
   // ML Kit sometimes returns short noise fragments (margin notes, smudges,
   // page artifacts) interleaved with real text. These break paragraph
@@ -100,7 +135,15 @@ export async function runOCR(imageUrl) {
   // iterates block.getLines(), iOS returns one VNRecognizedTextObservation per line).
   // Sort into reading order (handles single- and two-column pages) then join.
   // cleanText applies heuristic paragraph detection on the sorted text.
-  const text = sortReadingOrder(results)
+  const sorted = sortReadingOrder(results);
+
+  // --- DIAGNOSTIC: order after sort ---
+  console.log(
+    "[runOCR] sorted order (" + sorted.length + " lines):",
+    sorted.map((r, i) => i + ': "' + (r.text || "").slice(0, 40) + '"')
+  );
+
+  const text = sorted
     .map((r) => r.text)
     .filter((t) => t && t.trim().length > 0)
     .join("\n");
