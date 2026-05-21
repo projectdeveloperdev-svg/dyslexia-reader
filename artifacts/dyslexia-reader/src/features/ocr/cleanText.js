@@ -36,6 +36,8 @@
  */
 export function cleanText(raw) {
   if (!raw) return "";
+  // Diagnostic — remove with other diagnostic logs when stable.
+  console.log("cleanText INPUT:\n" + raw);
 
   // 1 — Normalise line endings, split into individual physical lines.
   let lines = raw
@@ -173,5 +175,8 @@ export function cleanText(raw) {
     })
     .filter((p) => p.length > 0);
 
-  return paragraphs.join("\n\n");
+  const output = paragraphs.join("\n\n");
+  // Diagnostic — remove with other diagnostic logs when stable.
+  console.log("cleanText OUTPUT:\n" + output);
+  return output;
 }
