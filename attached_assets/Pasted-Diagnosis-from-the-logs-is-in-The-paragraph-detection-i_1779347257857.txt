@@ -1,0 +1,45 @@
+Diagnosis from the logs is in. The paragraph detection in cleanText.js is 
+working correctly. The real bug is upstream: ML Kit is returning short junk 
+fragments (margin notes, page artifacts, smudges) interleaved into the 
+middle of paragraphs. Examples from the logs: lines like "feeing", "nuset", 
+"mling", "al or", "nd", "at", "meal", "walkt" appearing mid-paragraph in 
+runOCR raw output.
+
+These junk fragments are breaking up real paragraphs and confusing the 
+reading order. They need to be filtered out BEFORE cleanText.js runs.
+
+Fix in runOCR.js (NOT cleanText.js):
+
+Add a junk-fragment filter that runs after ML Kit returns its results but 
+before the reading-order sort. Filter out a text block if it meets ALL of 
+these criteria:
+
+1. The text is short — fewer than 6 characters after trimming, OR
+2. The text has no sentence-ending punctuation (. ! ? " ' ) and no leading 
+   capital letter that would suggest it's the start of a sentence, AND
+3. The bounding-box height is significantly smaller than the median 
+   bounding-box height of all returned blocks (say, less than 60% of 
+   median height) — indicating a smaller font / marginalia, OR
+4. The bounding-box midX is well outside the main text column (less than 
+   15% or greater than 85% of pageWidth) — indicating margin content.
+
+Keep it conservative — better to leave a junk fragment in than to delete a 
+real word. The goal is to catch obvious garbage, not to perfectly classify 
+everything.
+
+IMPORTANT — keep cleanText.js completely unchanged. The bug is not there.
+
+Add a console.log labelled "[runOCR] filtered junk fragments:" listing 
+which fragments got dropped, so we can verify the filter is catching the 
+right things and not eating real text.
+
+Test:
+- Scan the same multi-paragraph page that was used for diagnostic logging.
+- Check the logs — confirm the junk filter dropped fragments like "feeing", 
+  "nuset", "mling" but kept the real text.
+- Check the reader — paragraphs should now be clean and continuous.
+- Scan a clean page with no marginalia — confirm the filter doesn't 
+  incorrectly drop any real text.
+
+Do NOT add any other features. Do NOT touch the reading-order logic. Do 
+NOT touch cleanText.js. One thing at a time.
