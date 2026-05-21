@@ -298,8 +298,6 @@ function ScanSection() {
             changeRate={handleChangeRate}
             changePitch={handleChangePitch}
             changeVoice={handleChangeVoice}
-            fontSize={fontSize}
-            changeFontSize={changeFontSize}
             fontFamily={fontFamily}
             changeFontFamily={changeFontFamily}
             bgColour={bgColour}

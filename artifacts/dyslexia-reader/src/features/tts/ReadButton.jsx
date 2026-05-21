@@ -30,7 +30,6 @@ const FONT_OPTIONS = [
 function ReadButton({
   ttsState, rate, pitch, voices, selectedVoice,
   toggle, stop, changeRate, changePitch, changeVoice,
-  fontSize, changeFontSize,
   fontFamily, changeFontFamily,
   bgColour, changeBgColour,
   bgOpacity, changeBgOpacity,
@@ -57,19 +56,6 @@ function ReadButton({
 
   return (
     <div className="tts-controls">
-      <div className="speed-row">
-        <span className="speed-label">Font: {fontSize}px</span>
-        <input
-          type="range"
-          className="speed-slider"
-          min="14"
-          max="36"
-          step="1"
-          value={fontSize}
-          onChange={(e) => changeFontSize(parseInt(e.target.value, 10))}
-        />
-      </div>
-
       <div className="speed-row">
         <span className="speed-label">Typeface</span>
         <select
