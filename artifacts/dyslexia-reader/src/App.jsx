@@ -15,7 +15,7 @@ function MainApp() {
 
 function App() {
   return (
-    <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+    <WouterRouter base="">
       <Switch>
         <Route path="/voice-lab" component={VoiceLab} />
         <Route component={MainApp} />
