@@ -19,6 +19,10 @@ function ScanSection() {
   });
   const autoReadPendingRef = useRef(false);
   const pinchRef = useRef({ active: false, startDist: 0, startSize: 0, lastSize: 22 });
+  const [showPinchTip, setShowPinchTip] = useState(
+    () => localStorage.getItem("dexy.pinchTooltipSeen") !== "true"
+  );
+  const pinchTipTimerRef = useRef(null);
   const [fontSize, setFontSize] = useState(() => {
     const stored = localStorage.getItem("dexy-font-size");
     return stored ? parseInt(stored, 10) : 22;
@@ -39,8 +43,22 @@ function ScanSection() {
     localStorage.setItem("dexy-font-size", val);
   }
 
+  function dismissPinchTip() {
+    setShowPinchTip(false);
+    try { localStorage.setItem("dexy.pinchTooltipSeen", "true"); } catch (e) {}
+    if (pinchTipTimerRef.current) clearTimeout(pinchTipTimerRef.current);
+  }
+
+  // Auto-dismiss the tooltip 5 seconds after the text appears.
+  useEffect(() => {
+    if (status !== "done" || !showPinchTip) return;
+    pinchTipTimerRef.current = setTimeout(dismissPinchTip, 5000);
+    return () => clearTimeout(pinchTipTimerRef.current);
+  }, [status, showPinchTip]);
+
   function handlePinchStart(e) {
     if (e.touches.length !== 2) return;
+    dismissPinchTip();
     const [t1, t2] = e.touches;
     pinchRef.current = {
       active: true,
@@ -286,6 +304,16 @@ function ScanSection() {
               {isEditing ? "Done" : "Edit"}
             </button>
           </div>
+          {showPinchTip && (
+            <div className="pinch-tip" role="status" aria-live="polite">
+              <span className="pinch-tip-text">Pinch to resize text</span>
+              <button
+                className="pinch-tip-dismiss"
+                onClick={dismissPinchTip}
+                aria-label="Dismiss tip"
+              >×</button>
+            </div>
+          )}
           <CopyRow text={text} />
           <ReadButton
             ttsState={ttsState}
