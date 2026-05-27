@@ -1,6 +1,5 @@
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { runOCR } from "../ocr/runOCR";
-import "./ScanButton.css";
 
 function UploadButton({ onLoading, onResult, onError, onReset }) {
   async function handleClick() {

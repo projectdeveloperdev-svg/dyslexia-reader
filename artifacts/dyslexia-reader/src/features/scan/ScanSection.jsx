@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import ScanButton from "./ScanButton";
+import CameraView from "./CameraView";
 import UploadButton from "./UploadButton";
 import PasteInput from "./PasteInput";
 import ReadButton from "../tts/ReadButton";
@@ -258,7 +258,7 @@ function ScanSection() {
       </label>
 
       <div className="scan-section-buttons">
-        <ScanButton
+        <CameraView
           onLoading={handleLoading}
           onResult={handleResult}
           onError={handleError}
