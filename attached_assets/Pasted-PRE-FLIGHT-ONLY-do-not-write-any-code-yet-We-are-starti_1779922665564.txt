@@ -1,0 +1,30 @@
+PRE-FLIGHT ONLY — do not write any code yet.
+
+We are starting Phase 9.5.1 of Dexy: camera-quality improvements to the existing scan flow. This is the first sub-phase of 9.5 Quick Stack. Snippet capture and Pageable Reader come in 9.5.2, not now.
+
+Scope of 9.5.1 — camera-quality work only:
+1. Tap-to-focus: user taps a point on the viewfinder, camera focuses there. Small animated square appears at the tap point as visual feedback (iPhone camera style).
+2. Focus-settle delay: when the shutter is pressed, wait for autofocus to lock before actually capturing. Target 200-400ms. Invisible to user — no spinner, no "focusing…" message. Just a silent pause.
+3. Pinch-to-zoom on the viewfinder: standard two-finger pinch zooms in/out. Let the OS / camera plugin handle digital zoom — no custom lens switching logic.
+4. Framing guide: a simple rectangle outline on the viewfinder showing the area that will actually be captured. Passive overlay, no interaction.
+5. Landscape support as first-class: viewfinder, framing guide, and torch icon all work correctly in landscape. No rotation prompts. No "please rotate your phone" messages.
+6. Torch toggle: small icon on the camera viewfinder itself (not in settings). Tap to turn the LED on/off. Persists during the camera session.
+7. Max-resolution capture: always capture at the highest resolution the camera supports. No user-facing toggle. Accept the slightly slower capture time.
+
+What is NOT in scope for 9.5.1:
+- Snippet stacking / multi-capture flow (that's 9.5.2)
+- Pageable Reader (that's 9.5.2)
+- Mega Stack button (that's 9.5.3)
+- Burst mode, steadiness detection, edge detection, perspective correction (parked)
+- Any changes to the shutter button behaviour beyond the invisible focus-settle delay
+- Any changes to the post-capture flow, OCR pipeline, or reader
+
+Before writing any code, please reply with:
+
+1. Which files in the codebase handle the current camera / scan flow. List them with brief descriptions of what each does.
+2. Which camera plugin / library Dexy currently uses (e.g. Capacitor Camera, a custom plugin, MLKit's camera, etc.). Confirm the version.
+3. Which of the seven scope items above are straightforward with the current plugin, and which ones might require a different plugin or a custom native bridge. Be specific about why.
+4. Any risks or unknowns you can see (e.g. plugin doesn't expose tap-to-focus API, framing guide overlay coordinates won't match capture coordinates, torch API behaves differently on iOS vs Android).
+5. Your proposed plan for the order in which to build the seven items, and where each one will live in the codebase.
+
+Wait for my approval before writing any code. Even if your plan looks obvious, I want to confirm the file list and plugin choice first.
