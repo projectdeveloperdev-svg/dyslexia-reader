@@ -1,10 +1,12 @@
 /* ── WebView transparency when native camera is active ───────────────────── */
 /* camera-preview places its native view behind the WebView. These elements  */
 /* must be transparent so the camera layer is visible through them.          */
-body.camera-open,
-body.camera-open #root,
-body.camera-open .app-root {
+body.camera-open {
   background: transparent !important;
+}
+
+body.camera-open #root {
+  display: none;
 }
 
 /* ── Full-screen overlay ─────────────────────────────────────────────────── */
