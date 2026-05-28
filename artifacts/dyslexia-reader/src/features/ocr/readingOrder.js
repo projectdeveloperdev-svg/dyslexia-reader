@@ -202,6 +202,26 @@ export function sortReadingOrder(results) {
     }
   }
 
+  // Balance guard: reject the two-column split when one column holds fewer than
+  // MIN_COLUMN_SHARE of the non-spanning lines — a real two-column page is
+  // roughly balanced; indent jitter produces a heavily lopsided split.
+  const MIN_COLUMN_SHARE = 0.2;
+  const columnTotal = leftCol.length + rightCol.length;
+  if (
+    columnTotal > 0 &&
+    (leftCol.length < columnTotal * MIN_COLUMN_SHARE ||
+      rightCol.length < columnTotal * MIN_COLUMN_SHARE)
+  ) {
+    console.warn(
+      "[readingOrder] two-column split rejected — column balance too low (left: " +
+        leftCol.length +
+        ", right: " +
+        rightCol.length +
+        ") — falling back to single-column"
+    );
+    return [...results].sort((a, b) => a.boundingBox.top - b.boundingBox.top);
+  }
+
   // Tweak 2: warn if two-column was detected but nothing fell into either column bucket.
   if (spanning.length === results.length) {
     console.warn(
