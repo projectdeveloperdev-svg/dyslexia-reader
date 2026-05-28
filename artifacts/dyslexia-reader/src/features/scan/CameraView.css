@@ -17,9 +17,41 @@ body.camera-open #root {
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  /* Prevent any touch events from reaching elements below */
+  /* No justify-content: guide-area takes flex:1, controls sit naturally below */
   touch-action: none;
+}
+
+/* ── Framing guide area (fills space above the controls bar) ─────────────── */
+.camera-guide-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* ── Framing guide rectangle ─────────────────────────────────────────────── */
+/* Decorative only — does not affect capture. Short edge tracks screen short  */
+/* edge via vw/vh orientation media queries.                                  */
+.camera-framing-guide {
+  border: 2.5px solid rgba(255, 255, 255, 0.82);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+@media (orientation: portrait) {
+  .camera-framing-guide {
+    width: 85vw;
+    height: 62%;   /* 62% of the guide-area, which fills all space above controls */
+  }
+}
+
+@media (orientation: landscape) {
+  .camera-framing-guide {
+    width: 72vw;
+    height: 82%;   /* taller relative to the shorter guide-area in landscape */
+  }
 }
 
 /* ── Bottom control bar ──────────────────────────────────────────────────── */

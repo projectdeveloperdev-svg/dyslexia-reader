@@ -96,6 +96,10 @@ export default function CameraView({ onLoading, onResult, onError, onReset }) {
   // so the camera shows through, with the control bar at the bottom.
   return createPortal(
     <div id={PREVIEW_ID} className="camera-overlay">
+      {/* Framing guide — decorative only, no interaction, no crop effect */}
+      <div className="camera-guide-area" aria-hidden="true">
+        <div className="camera-framing-guide" />
+      </div>
       <div className="camera-controls">
         <button
           className="camera-cancel-btn"
