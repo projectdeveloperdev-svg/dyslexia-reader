@@ -4,7 +4,7 @@ import { CameraPreview } from "@capacitor-community/camera-preview";
 import { runOCR } from "../ocr/runOCR";
 import "./CameraView.css";
 
-const MAX_LONGEST_EDGE = 3000;
+const MAX_LONGEST_EDGE = 4000;
 
 /**
  * Normalises a raw JPEG base64 string captured by camera-preview:
@@ -40,7 +40,7 @@ async function normaliseCapture(base64) {
   canvas.getContext("2d").drawImage(bitmap, 0, 0, cw, ch);
   bitmap.close();
 
-  return canvas.toDataURL("image/jpeg", 0.92);
+  return canvas.toDataURL("image/jpeg", 0.98);
 }
 
 const PREVIEW_ID = "camera-preview-container";
