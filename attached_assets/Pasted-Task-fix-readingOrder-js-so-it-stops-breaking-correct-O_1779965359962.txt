@@ -1,0 +1,53 @@
+Task: fix readingOrder.js so it stops breaking correct OCR order.
+Single file. No other files.
+
+WHY: the console proves ML Kit returns lines in correct reading order
+already. sortReadingOrder re-sorts them and scrambles single-column pages.
+It also falsely detects two columns on single-column novel pages.
+
+RULES:
+- Edit readingOrder.js ONLY.
+- Do NOT touch runOCR.js, CameraView.jsx, cleanText.js, or the OCR/capture path.
+- Do NOT change getMidX, getPageWidth, or isSpanning.
+- Keep ALL existing [readingOrder] console logs.
+- No new dependencies.
+
+THREE CHANGES, all inside sortReadingOrder / detectColumns:
+
+CHANGE 1 — single-column returns ML Kit's original order, NOT a top-sort.
+Where single-column currently does:
+  return [...results].sort((a, b) => a.boundingBox.top - b.boundingBox.top);
+Replace with:
+  return results;   // trust ML Kit's order, do not re-sort
+
+CHANGE 2 — make detectColumns stricter. Raise the gap threshold.
+Currently: const threshold = pageWidth * 0.1;
+Change to: const threshold = pageWidth * 0.25;   // real gutter is wide
+
+CHANGE 3 — add a spanning-ceiling reject in the two-column path of
+sortReadingOrder, AFTER spanning/leftCol/rightCol are filled, alongside the
+existing balance guard. If spanning lines are 60% or more of all lines, it's
+a single-column page with a few short lines — reject the split:
+
+  const MAX_SPANNING_SHARE = 0.6;
+  if (spanning.length >= results.length * MAX_SPANNING_SHARE) {
+    console.warn(
+      "[readingOrder] two-column split rejected — too many spanning lines (" +
+      spanning.length + " of " + results.length +
+      ") — falling back to original order"
+    );
+    return results;   // trust ML Kit's order
+  }
+
+Also: the existing balance-guard fallback currently returns a top-sort.
+Change ITS return to also return results (original order), not a re-sort.
+
+EXACT VALUES (do not change these):
+- gap threshold: pageWidth * 0.25
+- MAX_SPANNING_SHARE = 0.6
+- MIN_COLUMN_SHARE = 0.2  (already there, leave it)
+
+When done:
+- Show me ONLY the diff (lines changed/added).
+- Confirm no other file was touched.
+- Do not run, build, or deploy.

@@ -53,7 +53,7 @@ function detectColumns(results, pageWidth) {
   if (pageWidth === 0) return { type: "single" };
 
   const midXValues = results.map(getMidX).sort((a, b) => a - b);
-  const threshold = pageWidth * 0.1;
+  const threshold = pageWidth * 0.25;
 
   // Search band: only look for the column gap in the middle 30–70% of the page.
   // Edge outliers (page numbers, stray annotations) sit outside this band and
@@ -162,7 +162,7 @@ export function sortReadingOrder(results) {
     console.log(
       "[readingOrder] detected: single-column (" + results.length + " lines)"
     );
-    return [...results].sort((a, b) => a.boundingBox.top - b.boundingBox.top);
+    return results;   // trust ML Kit's order, do not re-sort
   }
 
   // Two-column path.
@@ -219,7 +219,21 @@ export function sortReadingOrder(results) {
         rightCol.length +
         ") — falling back to single-column"
     );
-    return [...results].sort((a, b) => a.boundingBox.top - b.boundingBox.top);
+    return results;   // trust ML Kit's order
+  }
+
+  // Spanning-ceiling guard: if 60%+ of lines are spanning, it's a single-column
+  // page with short lines — reject the two-column split.
+  const MAX_SPANNING_SHARE = 0.6;
+  if (spanning.length >= results.length * MAX_SPANNING_SHARE) {
+    console.warn(
+      "[readingOrder] two-column split rejected — too many spanning lines (" +
+        spanning.length +
+        " of " +
+        results.length +
+        ") — falling back to original order"
+    );
+    return results;   // trust ML Kit's order
   }
 
   // Tweak 2: warn if two-column was detected but nothing fell into either column bucket.
