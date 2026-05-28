@@ -1,0 +1,59 @@
+Task: remove the abandoned framing rectangle. Two files only.
+
+WHY: the inset rectangle is decoration with no function and the user finds it
+annoying. We are formally rolling it back. We are NOT adding any replacement
+(no focus border, no tap-to-focus). The viewfinder will just show the camera
+and the bottom controls.
+
+RULES:
+- Edit CameraView.jsx and CameraView.css ONLY.
+- Do NOT change runOCR.js, readingOrder.js, the OCR path, or the camera
+  plugin or any plugin config.
+- Do NOT add any new feature, animation, border, or overlay.
+- No new dependencies.
+
+CHANGE 1 — CameraView.jsx
+
+In the active-state render (inside the createPortal), DELETE these three lines
+and the comment above them:
+
+  {/* Framing guide — decorative only, no interaction, no crop effect */}
+  <div className="camera-guide-area" aria-hidden="true">
+    <div className="camera-framing-guide" />
+  </div>
+
+Leave the .camera-overlay div, the .camera-controls div, and everything else
+unchanged.
+
+CHANGE 2 — CameraView.css
+
+DELETE these three style blocks entirely (they are now unused):
+
+  .camera-guide-area { ... }
+  .camera-framing-guide { ... }
+  @media (orientation: portrait) { .camera-framing-guide { ... } }
+  @media (orientation: landscape) { .camera-framing-guide { ... } }
+
+Also DELETE the section header comments that introduce them:
+
+  /* ── Framing guide area (fills space above the controls bar) ─────────── */
+  /* ── Framing guide rectangle ─────────────────────────────────────────── */
+
+Leave everything else in the CSS exactly as is — including body.camera-open,
+.camera-overlay, .camera-controls, .camera-cancel-btn, .camera-shutter-btn,
+.camera-shutter-spacer.
+
+LAYOUT CHECK (important):
+The overlay was a flex column where .camera-guide-area took flex:1 and pushed
+the controls to the bottom. Without it, the controls may rise to the top.
+
+To keep the controls at the bottom, add this single rule to .camera-controls:
+
+  margin-top: auto;
+
+Place it as the first declaration inside the .camera-controls block.
+
+When done:
+- Show me ONLY the diff (lines removed and the single line added).
+- Confirm no other file was touched.
+- Do not run, build, or deploy.
