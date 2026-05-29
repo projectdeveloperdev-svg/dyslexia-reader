@@ -1,0 +1,61 @@
+/* ── Backdrop ────────────────────────────────────────────────────────────── */
+.mega-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.38);
+  z-index: 500;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* ── Sheet ───────────────────────────────────────────────────────────────── */
+.mega-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 2rem 1.5rem;
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  animation: mega-sheet-up 0.22s ease;
+}
+
+@keyframes mega-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ── Message ─────────────────────────────────────────────────────────────── */
+.mega-sheet-message {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #333;
+  margin: 0;
+  text-align: center;
+  max-width: 320px;
+}
+
+/* ── Got it button ───────────────────────────────────────────────────────── */
+.mega-sheet-btn {
+  background: linear-gradient(180deg, #EFE9FB 0%, #E6E0F8 100%);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 14px;
+  padding: 0.9rem;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 10px 28px rgba(200, 180, 220, 0.35);
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.mega-sheet-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 10px rgba(200, 180, 220, 0.20);
+}
