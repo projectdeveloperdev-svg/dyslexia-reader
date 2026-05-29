@@ -81,3 +81,101 @@ body.camera-open #root {
 .camera-shutter-spacer {
   min-width: 72px;
 }
+
+/* ── Done button (stack mode — mirrors Cancel on the right) ──────────────── */
+.camera-done-btn {
+  min-width: 72px;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.9;
+  text-align: right;
+}
+
+.camera-done-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ── Counter pill (stack mode — top of screen) ───────────────────────────── */
+.camera-counter-pill {
+  position: absolute;
+  top: max(1.25rem, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.52);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── Discard confirmation dialog ─────────────────────────────────────────── */
+.camera-discard-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.camera-discard-dialog {
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.75rem 1.5rem 1.25rem;
+  width: min(88vw, 320px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.camera-discard-msg {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+  text-align: center;
+}
+
+.camera-discard-actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.camera-discard-btn,
+.camera-keep-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.camera-discard-btn {
+  background: #f0e8fb;
+  color: #7c0000;
+}
+
+.camera-keep-btn {
+  background: linear-gradient(180deg, #EFE9FB 0%, #E6E0F8 100%);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(200, 180, 220, 0.35);
+}

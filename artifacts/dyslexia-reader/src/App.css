@@ -1,3 +1,44 @@
+/* ── Stack preview placeholder screen ───────────────────────────────────── */
+.stack-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  flex: 1;
+  width: 100%;
+  padding: 2rem 1.5rem;
+  box-sizing: border-box;
+}
+
+.stack-preview-msg {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+  text-align: center;
+}
+
+.stack-preview-back {
+  background: linear-gradient(180deg, #EFE9FB 0%, #E6E0F8 100%);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 14px;
+  padding: 0.9rem 2.5rem;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 10px 28px rgba(200, 180, 220, 0.35);
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.stack-preview-back:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 10px rgba(200, 180, 220, 0.20);
+}
+
 /* ── Button row (Stack + Mega Stack) ─────────────────────────────────────── */
 .app-action-row {
   display: flex;

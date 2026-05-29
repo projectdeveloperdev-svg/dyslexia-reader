@@ -3,10 +3,53 @@ import { Router as WouterRouter, Switch, Route } from "wouter";
 import ScanSection from "./features/scan/ScanSection";
 import VoiceLab from "./features/voice-lab/VoiceLab";
 import MegaStackSheet from "./features/stack/MegaStackSheet";
+import CameraView from "./features/scan/CameraView";
+import { clearSnippets } from "./features/stack/stackStore";
 import "./App.css";
+
+function StackPreview({ count, onBack }) {
+  return (
+    <div className="stack-preview">
+      <p className="stack-preview-msg">
+        {count} snippet{count !== 1 ? "s" : ""} captured
+      </p>
+      <button className="stack-preview-back" onClick={onBack}>
+        Back
+      </button>
+    </div>
+  );
+}
 
 function MainApp() {
   const [megaStackOpen, setMegaStackOpen] = useState(false);
+  const [stackPhase, setStackPhase] = useState(null); // null | "capture" | "preview"
+  const [stackCount, setStackCount] = useState(0);
+
+  function handleStackDone(count) {
+    setStackCount(count);
+    setStackPhase("preview");
+  }
+
+  function handleStackCancel() {
+    setStackPhase(null);
+  }
+
+  function handleStackBack() {
+    clearSnippets();
+    setStackCount(0);
+    setStackPhase(null);
+  }
+
+  if (stackPhase === "preview") {
+    return (
+      <div className="app-root">
+        <div className="app-blob app-blob--pink" aria-hidden="true" />
+        <div className="app-blob app-blob--lavender" aria-hidden="true" />
+        <img src="/dexy-wordmark.png" alt="Dexy" className="app-logo" />
+        <StackPreview count={stackCount} onBack={handleStackBack} />
+      </div>
+    );
+  }
 
   return (
     <div className="app-root">
@@ -14,7 +57,10 @@ function MainApp() {
       <div className="app-blob app-blob--lavender" aria-hidden="true" />
       <img src="/dexy-wordmark.png" alt="Dexy" className="app-logo" />
       <div className="app-action-row">
-        <button className="app-action-btn" disabled>
+        <button
+          className="app-action-btn"
+          onClick={() => setStackPhase("capture")}
+        >
           Stack
         </button>
         <button
@@ -26,7 +72,17 @@ function MainApp() {
         </button>
       </div>
       <ScanSection />
-      <MegaStackSheet open={megaStackOpen} onClose={() => setMegaStackOpen(false)} />
+      {stackPhase === "capture" && (
+        <CameraView
+          mode="stack"
+          onDone={handleStackDone}
+          onStackCancel={handleStackCancel}
+        />
+      )}
+      <MegaStackSheet
+        open={megaStackOpen}
+        onClose={() => setMegaStackOpen(false)}
+      />
     </div>
   );
 }
