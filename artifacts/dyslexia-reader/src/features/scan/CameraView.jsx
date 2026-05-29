@@ -252,7 +252,13 @@ export default function CameraView({
     const idx = showThumbnailSheet;
     deleteSnippet(idx);
     setThumbnails((prev) => prev.filter((_, i) => i !== idx));
-    setStackCount((c) => c - 1);
+    const newCount = stackCount - 1;
+    setStackCount(newCount);
+    // Re-arm the cap limit whenever the count drops below the cap.
+    if (newCount < STACK_CAP && capLimitSeen) {
+      console.log("[CameraView] capLimitSeen reset — count dropped below cap");
+      setCapLimitSeen(false);
+    }
     // Adjust retakeIndex if necessary.
     if (retakeIndex === idx) {
       setRetakeIndex(null);
