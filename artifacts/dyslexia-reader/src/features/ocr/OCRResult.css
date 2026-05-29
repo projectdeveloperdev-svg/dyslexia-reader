@@ -65,7 +65,7 @@
   color: #1a1a1a;
   text-align: left;
   resize: vertical;
-  min-height: 120px;
+  min-height: 50vh;
   outline: none;
   box-sizing: border-box;
   word-break: break-word;
