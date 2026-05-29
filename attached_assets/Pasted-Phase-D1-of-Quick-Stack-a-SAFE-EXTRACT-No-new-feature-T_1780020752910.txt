@@ -1,0 +1,37 @@
+Phase D1 of Quick Stack: a SAFE EXTRACT. No new feature. The single-scan reading experience must work EXACTLY as before after this change. This is a refactor only.
+
+Goal:
+- Move the reading block out of ScanSection.jsx into a new reusable component ReaderView.
+- ScanSection then renders <ReaderView text={text} /> instead of having the reading block inline.
+
+Files to change:
+- src/features/scan/ScanSection.jsx — remove the inline reading block, render <ReaderView> instead
+- Create src/features/reader/ReaderView.jsx
+- Create src/features/reader/ReaderView.css (move any reading-specific styles here)
+
+WHAT MOVES INTO ReaderView (lift and shift, do not rewrite logic):
+- The WordText display + edit mode (textarea, Edit/Done button, handleEditStart/handleEditDone)
+- Pinch-to-resize (handlePinchStart/Move/End, pinchRef, the pinch tip + its 5s auto-dismiss)
+- CopyRow
+- ReadButton with ALL its controls (font size, font family, bg colour, bg opacity, voice, speed, pitch)
+- The useTTS hook wiring for the text
+- All the font/voice/colour/speed/pitch SETTINGS and their localStorage persistence (restore-on-mount effects AND the handleChange* wrappers) — ReaderView owns its own settings now (Path A)
+
+ReaderView props:
+- text (string) — the text to display and read
+
+WHAT STAYS IN ScanSection:
+- Scan/Upload/Paste buttons and their handlers
+- OCR status states (idle/loading/done/error)
+- cleanText / paste handling
+- The "Auto-read after scan" toggle and its localStorage
+- Auto-read trigger: ScanSection still decides WHEN to auto-read, but since useTTS now lives in ReaderView, expose a way for ScanSection to request auto-read. Simplest: pass an autoRead prop to ReaderView; ReaderView fires its own toggle() once when text arrives and autoRead is true. Keep the "fire exactly once per text" guard.
+
+HARD RULES:
+- Do NOT change any reading behaviour, any control, any localStorage key, or any styling the user sees. This is a pure move.
+- Do NOT add anything new. No paged reader yet. That is D2.
+- Keep all existing localStorage keys exactly the same (dexy-font-size, dexy-voice, dexy-speed, dexy-pitch, dexy-font-family, dexy-bg-colour, dexy-bg-opacity, dexy.pinchTooltipSeen, dexy-auto-read stays in ScanSection).
+
+After the change, single-scan must: scan → text appears → Edit works → pinch works → Copy works → Read/Pause/Stop works → voice/speed/pitch/font/colour all work → auto-read still fires. Identical to before.
+
+Show me which files you changed before stopping.
