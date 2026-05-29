@@ -1,0 +1,53 @@
+Phase D2 of Quick Stack: the Paged Reader. This replaces the StackPreview placeholder. Quote the spec exactly — do not re-derive.
+
+Files to create:
+- src/features/reader/PagedReader.jsx
+- src/features/reader/PagedReader.css
+
+Files to change:
+- src/App.jsx — when stackPhase === "preview", render <PagedReader onExit={handleStackBack} /> instead of <StackPreview>. Remove the StackPreview component and its usage. Keep handleStackBack (clearSnippets + reset to home) — PagedReader calls it via onExit.
+
+PagedReader reads the stack from stackStore:
+- import { getSnippets } from "../stack/stackStore"
+- Each snippet = one page. Page text is snippet.ocrText. Capture order = page order. No sorting, no reordering.
+- Read getSnippets() once on mount into state (so it's stable while reading).
+
+Each page renders the existing reusable ReaderView:
+- <ReaderView text={snippet.ocrText} /> — this gives every page the full Reader features (font, voice, speed, pitch, colours, copy, edit, pinch) for free.
+- IMPORTANT: do NOT pass autoRead. Page playback is controlled by PagedReader's auto-advance logic below, NOT by ReaderView's scan auto-read. The two must not fight.
+
+PAGING / SWIPE (quote spec):
+- Horizontal swipe between pages. ~200ms slide animation: current page slides off left, next slides in from right. Subtle, not flashy.
+- Only one page mounted/visible at a time is fine; animate the transition.
+- Page-indicator dots at the bottom: filled dot = current, hollow = others (e.g. ●○○○○ for 5 pages, current first).
+- Dots are tappable to jump to that page (spec allows this for up to 5 pages).
+- Show each page EXACTLY as captured. No stitching. No "continues →" hint between pages.
+
+AUTO-ADVANCE TOGGLE (v2 spec — the key new behaviour):
+- A toggle visible in the Paged Reader, ON by default. Label it clearly, e.g. "Auto-play next page".
+- When ON: when TTS finishes reading the CURRENT page, automatically slide to the next page and start reading it. Play straight through the whole stack like a book.
+  - At the LAST page: when TTS finishes, STOP SILENTLY. No audio cue. No loop back to page 1.
+- When OFF: TTS reads the current page and stops silently at end of page. User swipes manually and taps play again. (This is the original v1 behaviour.)
+- No audio cue at any page boundary in either mode.
+
+INTERACTION RULES:
+- If the user swipes manually (or taps a dot to jump) WHILE TTS is playing: stop the current page's audio immediately before transitioning. No audio bleed between pages. The new page starts idle (user taps play) UNLESS auto-advance just triggered the move (in which case the new page auto-plays).
+- Distinguish the two move types: auto-advance move = auto-play the new page; manual move (swipe/dot) = land idle, even when auto-advance is ON.
+
+HOW TO DETECT "PAGE FINISHED" FOR AUTO-ADVANCE:
+- ReaderView owns useTTS internally right now. To know when a page's TTS ends, ReaderView needs to tell its parent. Add an OPTIONAL callback prop to ReaderView: onPlaybackEnd (called when TTS reaches the natural end of the text, NOT when manually stopped/paused).
+  - This must be additive and optional. When ScanSection renders ReaderView without onPlaybackEnd, behaviour is completely unchanged.
+  - Only call onPlaybackEnd on natural completion of speech, not on stop()/pause()/text change.
+- PagedReader passes onPlaybackEnd to the active page's ReaderView; when it fires and auto-advance is ON and not on the last page, trigger the slide+autoplay of the next page.
+- PagedReader also needs to START playback on the new page after an auto-advance. Expose a way to do this. Simplest robust approach: give ReaderView an optional autoPlayKey or an imperative trigger so PagedReader can tell the freshly-shown page "start playing now." Implement whatever is cleanest but keep it OPTIONAL and non-breaking for ScanSection.
+
+EXIT:
+- A clear Back/Close control in the Paged Reader that calls onExit (which clears the stack and returns home).
+
+HARD RULES:
+- Do NOT change single-scan behaviour. ScanSection renders ReaderView with no new props and must behave identically.
+- Any new ReaderView props (onPlaybackEnd, autoplay trigger) must be optional and additive.
+- No stitching, no "continues →", no reordering, no audio cue, no loop at end.
+- Keep all existing localStorage keys unchanged.
+
+Before writing, list the files you'll touch and confirm the ReaderView changes are additive/optional. Then build. Show me which files changed before stopping.

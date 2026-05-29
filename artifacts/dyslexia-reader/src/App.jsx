@@ -4,21 +4,9 @@ import ScanSection from "./features/scan/ScanSection";
 import VoiceLab from "./features/voice-lab/VoiceLab";
 import MegaStackSheet from "./features/stack/MegaStackSheet";
 import CameraView from "./features/scan/CameraView";
+import PagedReader from "./features/reader/PagedReader";
 import { clearSnippets } from "./features/stack/stackStore";
 import "./App.css";
-
-function StackPreview({ count, onBack }) {
-  return (
-    <div className="stack-preview">
-      <p className="stack-preview-msg">
-        {count} snippet{count !== 1 ? "s" : ""} captured
-      </p>
-      <button className="stack-preview-back" onClick={onBack}>
-        Back
-      </button>
-    </div>
-  );
-}
 
 function MainApp() {
   const [megaStackOpen, setMegaStackOpen] = useState(false);
@@ -46,7 +34,7 @@ function MainApp() {
         <div className="app-blob app-blob--pink" aria-hidden="true" />
         <div className="app-blob app-blob--lavender" aria-hidden="true" />
         <img src="/dexy-wordmark.png" alt="Dexy" className="app-logo" />
-        <StackPreview count={stackCount} onBack={handleStackBack} />
+        <PagedReader onExit={handleStackBack} />
       </div>
     );
   }

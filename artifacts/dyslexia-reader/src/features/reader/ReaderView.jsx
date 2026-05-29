@@ -5,9 +5,15 @@ import WordText from "../tts/WordText";
 import CopyRow from "../copy/CopyRow";
 import "./ReaderView.css";
 
-export default function ReaderView({ text, autoRead }) {
+export default function ReaderView({
+  text,
+  autoRead,
+  // ── Optional PagedReader callbacks (additive — ScanSection never passes these) ──
+  onPlaybackEnd,   // called on natural TTS completion only (not stop/pause)
+  autoPlayKey,     // non-zero on mount → trigger play once; 0/undefined → idle
+}) {
   // ── Local display text (prop-initialised, can be overridden by edit) ────
-  // Editing only updates this local copy; ScanSection doesn't need to know.
+  // Editing only updates this local copy; callers don't need to know.
   const [displayText, setDisplayText] = useState(text);
 
   // Sync displayText when a new scan result arrives.
@@ -18,18 +24,6 @@ export default function ReaderView({ text, autoRead }) {
   // ── Edit mode ─────────────────────────────────────────────────────────
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
-
-  function handleEditStart() {
-    stop();
-    setEditValue(displayText);
-    setIsEditing(true);
-  }
-
-  function handleEditDone() {
-    const newText = editValue.trim();
-    if (newText) setDisplayText(newText);
-    setIsEditing(false);
-  }
 
   // ── Pinch-to-resize ───────────────────────────────────────────────────
   const pinchRef = useRef({ active: false, startDist: 0, startSize: 0, lastSize: 22 });
@@ -186,7 +180,7 @@ export default function ReaderView({ text, autoRead }) {
     } catch (e) { console.error("localStorage write failed:", e); }
   }
 
-  // ── Auto-read ─────────────────────────────────────────────────────────
+  // ── Auto-read (ScanSection path) ──────────────────────────────────────
   // Detect when a new scan result arrives (text prop changes) and fire
   // toggle() exactly once after useTTS has settled on the new text.
   const autoReadPendingRef = useRef(false);
@@ -203,6 +197,66 @@ export default function ReaderView({ text, autoRead }) {
     autoReadPendingRef.current = false;
     toggle();
   }, [displayText, ttsState, toggle]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Natural-end detection (PagedReader path) ──────────────────────────
+  // manualStopRef: true when the user explicitly paused/stopped, so we can
+  // distinguish that from natural TTS completion. Reset to false when TTS
+  // transitions back to "speaking" (resume / new play).
+  const manualStopRef = useRef(false);
+  const prevTtsStateRef = useRef("idle");
+  const onPlaybackEndRef = useRef(onPlaybackEnd);
+  useEffect(() => { onPlaybackEndRef.current = onPlaybackEnd; }, [onPlaybackEnd]);
+
+  useEffect(() => {
+    const prev = prevTtsStateRef.current;
+    prevTtsStateRef.current = ttsState;
+    // Natural end: was speaking, now idle, and user didn't manually stop.
+    if (prev === "speaking" && ttsState === "idle" && !manualStopRef.current) {
+      if (onPlaybackEndRef.current) onPlaybackEndRef.current();
+    }
+    // Reset the flag whenever TTS resumes/starts — next end may be natural again.
+    if (ttsState === "speaking") {
+      manualStopRef.current = false;
+    }
+  }, [ttsState]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Wrapped toggle / stop for manual-stop tracking ────────────────────
+  function wrappedToggle() {
+    // Toggling while speaking = pause = manual intervention.
+    if (ttsState === "speaking") {
+      manualStopRef.current = true;
+    }
+    // paused → speaking (resume) and idle → speaking (start) leave the flag alone;
+    // the ttsState effect above resets it to false when "speaking" is re-entered.
+    toggle();
+  }
+
+  function wrappedStop() {
+    manualStopRef.current = true;
+    stop();
+  }
+
+  // ── Auto-play on mount (PagedReader path) ─────────────────────────────
+  // When autoPlayKey is non-zero, the page was navigated to by auto-advance —
+  // start playing immediately. Runs on mount only (empty deps intentional).
+  useEffect(() => {
+    if (!autoPlayKey) return;
+    manualStopRef.current = false;
+    toggle();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Edit handlers ─────────────────────────────────────────────────────
+  function handleEditStart() {
+    wrappedStop();
+    setEditValue(displayText);
+    setIsEditing(true);
+  }
+
+  function handleEditDone() {
+    const newText = editValue.trim();
+    if (newText) setDisplayText(newText);
+    setIsEditing(false);
+  }
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
@@ -246,8 +300,8 @@ export default function ReaderView({ text, autoRead }) {
         pitch={pitch}
         voices={voices}
         selectedVoice={selectedVoice}
-        toggle={toggle}
-        stop={stop}
+        toggle={wrappedToggle}
+        stop={wrappedStop}
         changeRate={handleChangeRate}
         changePitch={handleChangePitch}
         changeVoice={handleChangeVoice}

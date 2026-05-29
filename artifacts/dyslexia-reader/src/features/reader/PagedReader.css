@@ -1,0 +1,156 @@
+/* ── Outer container ─────────────────────────────────────────────────────── */
+.paged-reader {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.paged-reader-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem 0.5rem 0.5rem;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.paged-reader-back {
+  background: none;
+  border: none;
+  color: #555;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  transition: background 0.12s ease;
+  white-space: nowrap;
+}
+
+.paged-reader-back:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* ── Auto-advance toggle ─────────────────────────────────────────────────── */
+.paged-reader-autoadvance-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.paged-reader-autoadvance-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #777;
+  white-space: nowrap;
+}
+
+.paged-reader-toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.paged-reader-toggle-track {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: #ccc;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+
+.paged-reader-toggle-track.paged-reader-toggle-on {
+  background: #1a1a1a;
+}
+
+.paged-reader-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.paged-reader-toggle-track.paged-reader-toggle-on .paged-reader-toggle-thumb {
+  transform: translateX(18px);
+}
+
+/* ── Page viewport (clips slide animation) ───────────────────────────────── */
+.paged-reader-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* ── Page content wrapper ────────────────────────────────────────────────── */
+.paged-reader-page {
+  width: 100%;
+  padding: 0 1rem 1rem;
+  box-sizing: border-box;
+}
+
+.paged-reader-page--from-right {
+  animation: paged-slide-from-right 0.2s ease both;
+}
+
+.paged-reader-page--from-left {
+  animation: paged-slide-from-left 0.2s ease both;
+}
+
+@keyframes paged-slide-from-right {
+  from { transform: translateX(60%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+
+@keyframes paged-slide-from-left {
+  from { transform: translateX(-60%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ── Dot indicators ──────────────────────────────────────────────────────── */
+.paged-reader-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 0.75rem 1rem;
+  flex-shrink: 0;
+}
+
+.paged-reader-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid #aaa;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.paged-reader-dot:active {
+  transform: scale(0.85);
+}
+
+.paged-reader-dot--active {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  cursor: default;
+}
