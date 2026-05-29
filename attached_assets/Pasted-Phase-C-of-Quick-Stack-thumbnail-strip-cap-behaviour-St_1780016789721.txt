@@ -1,0 +1,38 @@
+Phase C of Quick Stack: thumbnail strip + cap behaviour. Stack mode only — do NOT touch scan mode.
+
+Files to change:
+- src/features/stack/stackStore.js — add deleteSnippet(index) and replaceSnippet(index, image, ocrText)
+- src/features/scan/CameraView.jsx — thumbnail strip, action sheet, cap logic (stack mode only)
+- src/features/scan/CameraView.css — styles for strip and sheet
+- Create src/features/stack/CapLimitSheet.jsx — the 6th-tap limit sheet
+
+stackStore.js additions:
+- deleteSnippet(index): removes that slot; later slots shift down (slot 3 becomes slot 2).
+- replaceSnippet(index, image, ocrText): overwrites that slot in place. Does NOT change array length.
+
+THUMBNAIL STRIP (stack mode only):
+- Appears only AFTER the first capture (hidden at 0 snippets).
+- Position: along the bottom, ~50px tall, semi-transparent overlay. Do not cover the shutter controls — overlay above them.
+- Shows snippets in capture order, left to right.
+- Each thumbnail is the captured image.
+
+TAP A THUMBNAIL → action sheet with three options: Retake / Delete / Cancel
+- Retake: dismiss sheet, return to live camera preview. The NEXT shutter tap REPLACES that slot (use replaceSnippet) and the counter does NOT increment. After the replace, normal capture resumes — the user can keep adding snippets.
+- Delete: call deleteSnippet(index). Later slots shift down. Counter decreases by 1. User can capture again to refill.
+- Cancel: dismiss sheet, no change.
+
+CAP BEHAVIOUR:
+- Free cap is 5 snippets.
+- At exactly 5/5: the counter pill tints AMBER (not red — this is not an error). Add optional small text "Last snippet — tap Done to read." The shutter is STILL ACTIVE at 5/5.
+- If the shutter is tapped a 6th time: show CapLimitSheet.
+
+CapLimitSheet requirements:
+- Wording, exactly: "You've reached the limit of 5 snippets per stack. Tap Read to read your stack now, or unlock unlimited stacks with Mega Stack."
+- Two buttons: "Read now" and "Get Mega Stack".
+  - "Read now" → ends capture, goes to the placeholder preview screen (same as Done).
+  - "Get Mega Stack" → shows the existing MegaStackSheet "coming soon" sheet.
+- After this sheet is dismissed: the shutter becomes INACTIVE at 5/5. No repeated pop-ups. No nag. The user can still tap Done, Cancel, or tap a thumbnail to edit.
+
+Do not add drag-to-reorder. Do not add any sorting. Capture order is reading order.
+Do not change scan mode.
+Show me which files you changed before stopping.

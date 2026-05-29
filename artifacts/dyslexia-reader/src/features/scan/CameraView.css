@@ -82,6 +82,125 @@ body.camera-open #root {
   min-width: 72px;
 }
 
+/* ── Bottom wrapper (stack mode: groups thumbnail strip + controls) ───────── */
+/* margin-top: auto pushes the whole block to the bottom of the flex column.  */
+.camera-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* When controls are inside .camera-bottom they don't need their own margin. */
+.camera-bottom .camera-controls {
+  margin-top: 0;
+}
+
+/* ── Thumbnail strip ─────────────────────────────────────────────────────── */
+.camera-thumb-strip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  background: rgba(0, 0, 0, 0.48);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  height: 50px;
+  box-sizing: border-box;
+}
+
+.camera-thumb-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.camera-thumb-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: border-color 0.15s ease;
+}
+
+.camera-thumb-btn--retaking {
+  border-color: #f5c542;
+}
+
+.camera-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 3px;
+}
+
+.camera-thumb-retake-badge {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #f5c542;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  border-radius: 3px;
+}
+
+/* ── Thumbnail action sheet ──────────────────────────────────────────────── */
+.camera-thumb-action-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  z-index: 20;
+}
+
+.camera-thumb-action-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 0.75rem 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.camera-thumb-action-btn {
+  width: 100%;
+  padding: 0.95rem;
+  background: #f5f1fd;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity 0.1s ease;
+}
+
+.camera-thumb-action-btn:active {
+  opacity: 0.7;
+}
+
+.camera-thumb-action-btn--danger {
+  color: #b00020;
+}
+
+.camera-thumb-action-btn--cancel {
+  background: #eae6f8;
+  font-weight: 600;
+}
+
 /* ── Done button (stack mode — mirrors Cancel on the right) ──────────────── */
 .camera-done-btn {
   min-width: 72px;

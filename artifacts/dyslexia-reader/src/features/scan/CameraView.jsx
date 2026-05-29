@@ -2,10 +2,18 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { CameraPreview } from "@capacitor-community/camera-preview";
 import { runOCR } from "../ocr/runOCR";
-import { addSnippet, clearSnippets } from "../stack/stackStore";
+import {
+  addSnippet,
+  clearSnippets,
+  deleteSnippet,
+  replaceSnippet,
+} from "../stack/stackStore";
+import CapLimitSheet from "../stack/CapLimitSheet";
+import MegaStackSheet from "../stack/MegaStackSheet";
 import "./CameraView.css";
 
 const MAX_LONGEST_EDGE = 4000;
+const STACK_CAP = 5;
 
 /**
  * Normalises a raw JPEG base64 string captured by camera-preview:
@@ -61,9 +69,15 @@ export default function CameraView({
   const [active, setActive] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // stack-mode-only state
+  // ── Stack-mode-only state ──────────────────────────────────────────────
+  const [thumbnails, setThumbnails] = useState([]); // data URLs in capture order
   const [stackCount, setStackCount] = useState(0);
+  const [retakeIndex, setRetakeIndex] = useState(null); // slot being retaken, or null
+  const [showThumbnailSheet, setShowThumbnailSheet] = useState(null); // index | null
   const [showDiscard, setShowDiscard] = useState(false);
+  const [showCapLimit, setShowCapLimit] = useState(false);
+  const [capLimitSeen, setCapLimitSeen] = useState(false);
+  const [showMegaStack, setShowMegaStack] = useState(false);
 
   // Stack mode: auto-open camera on mount.
   useEffect(() => {
@@ -101,7 +115,7 @@ export default function CameraView({
     };
   }, [active]);
 
-  // ── Scan mode handlers ─────────────────────────────────────────────────
+  // ── Scan mode handlers (unchanged) ────────────────────────────────────
 
   function openCamera() {
     document.body.classList.add("camera-open");
@@ -151,6 +165,19 @@ export default function CameraView({
 
   async function handleStackShutter() {
     if (busy) return;
+
+    const isRetaking = retakeIndex !== null;
+
+    // Cap gate: only applies when adding a new snippet (not retaking).
+    if (!isRetaking && stackCount >= STACK_CAP) {
+      if (!capLimitSeen) {
+        setCapLimitSeen(true);
+        setShowCapLimit(true);
+      }
+      // If already seen: silent no-op — no nag.
+      return;
+    }
+
     setBusy(true);
 
     let base64;
@@ -167,8 +194,21 @@ export default function CameraView({
     try {
       const dataUrl = await normaliseCapture(base64);
       const ocrText = await runOCR(dataUrl);
-      addSnippet(dataUrl, ocrText);
-      setStackCount((c) => c + 1);
+
+      if (isRetaking) {
+        replaceSnippet(retakeIndex, dataUrl, ocrText);
+        setThumbnails((prev) => {
+          const next = [...prev];
+          next[retakeIndex] = dataUrl;
+          return next;
+        });
+        setRetakeIndex(null);
+        // stackCount stays the same
+      } else {
+        addSnippet(dataUrl, ocrText);
+        setThumbnails((prev) => [...prev, dataUrl]);
+        setStackCount((c) => c + 1);
+      }
     } catch (e) {
       console.error("[CameraView] stack OCR failed:", e);
     }
@@ -201,6 +241,44 @@ export default function CameraView({
     onDone(stackCount);
   }
 
+  // ── Thumbnail action sheet handlers ───────────────────────────────────
+
+  function handleRetake() {
+    setRetakeIndex(showThumbnailSheet);
+    setShowThumbnailSheet(null);
+  }
+
+  function handleDeleteThumb() {
+    const idx = showThumbnailSheet;
+    deleteSnippet(idx);
+    setThumbnails((prev) => prev.filter((_, i) => i !== idx));
+    setStackCount((c) => c - 1);
+    // Adjust retakeIndex if necessary.
+    if (retakeIndex === idx) {
+      setRetakeIndex(null);
+    } else if (retakeIndex !== null && retakeIndex > idx) {
+      setRetakeIndex((r) => r - 1);
+    }
+    setShowThumbnailSheet(null);
+  }
+
+  // ── CapLimitSheet handlers ─────────────────────────────────────────────
+
+  function handleCapLimitReadNow() {
+    setShowCapLimit(false);
+    setActive(false);
+    onDone(stackCount);
+  }
+
+  function handleCapLimitGetMegaStack() {
+    setShowCapLimit(false);
+    setShowMegaStack(true);
+  }
+
+  function handleCapLimitDismiss() {
+    setShowCapLimit(false);
+  }
+
   // ── Inactive: render trigger button (scan mode only) ───────────────────
 
   if (!active) {
@@ -215,45 +293,113 @@ export default function CameraView({
     return null;
   }
 
+  // ── Derived display values ─────────────────────────────────────────────
+
+  const atCap = stackCount >= STACK_CAP;
+  const shutterActive = !busy && (retakeIndex !== null || !atCap || !capLimitSeen);
+  // Pill is amber when at cap (whether or not limit sheet has been seen).
+  const pillAmber = atCap;
+
   // ── Active: full-screen overlay portalled to document.body ─────────────
   // The native camera layer sits behind the WebView; this div is transparent
   // so the camera shows through, with the control bar at the bottom.
   return createPortal(
     <div id={PREVIEW_ID} className="camera-overlay">
+      {/* Counter pill */}
       {mode === "stack" && (
-        <div className="camera-counter-pill" aria-live="polite">
-          {stackCount} / 5
+        <div
+          className={`camera-counter-pill${pillAmber ? " camera-counter-pill--amber" : ""}`}
+          aria-live="polite"
+        >
+          <span>{stackCount} / {STACK_CAP}</span>
+          {pillAmber && !capLimitSeen && (
+            <span className="camera-counter-sub">Last snippet — tap Done to read.</span>
+          )}
         </div>
       )}
 
-      <div className="camera-controls">
-        <button
-          className="camera-cancel-btn"
-          onClick={mode === "stack" ? handleStackCancel : cancelCamera}
-          disabled={busy}
-        >
-          Cancel
-        </button>
-        <button
-          className="camera-shutter-btn"
-          onClick={mode === "stack" ? handleStackShutter : handleShutter}
-          disabled={busy}
-          aria-label="Take photo"
-        />
-        {mode === "stack" ? (
-          <button
-            className="camera-done-btn"
-            onClick={handleDone}
-            disabled={busy || stackCount === 0}
-          >
-            Done
-          </button>
-        ) : (
-          /* Spacer mirrors the Cancel button width to keep shutter centred */
-          <div className="camera-shutter-spacer" aria-hidden="true" />
+      {/* Bottom area: thumbnail strip + controls grouped together */}
+      <div className="camera-bottom">
+        {/* Thumbnail strip — visible after first capture */}
+        {mode === "stack" && thumbnails.length > 0 && (
+          <div className="camera-thumb-strip" role="list" aria-label="Captured snippets">
+            {thumbnails.map((src, i) => (
+              <button
+                key={i}
+                className={`camera-thumb-btn${retakeIndex === i ? " camera-thumb-btn--retaking" : ""}`}
+                onClick={() => setShowThumbnailSheet(i)}
+                aria-label={`Snippet ${i + 1}${retakeIndex === i ? ", retaking" : ""}`}
+                role="listitem"
+              >
+                <img src={src} className="camera-thumb-img" alt="" />
+                {retakeIndex === i && (
+                  <div className="camera-thumb-retake-badge" aria-hidden="true">↺</div>
+                )}
+              </button>
+            ))}
+          </div>
         )}
+
+        {/* Control bar */}
+        <div className="camera-controls">
+          <button
+            className="camera-cancel-btn"
+            onClick={mode === "stack" ? handleStackCancel : cancelCamera}
+            disabled={busy}
+          >
+            Cancel
+          </button>
+          <button
+            className="camera-shutter-btn"
+            onClick={mode === "stack" ? handleStackShutter : handleShutter}
+            disabled={!shutterActive}
+            aria-label="Take photo"
+          />
+          {mode === "stack" ? (
+            <button
+              className="camera-done-btn"
+              onClick={handleDone}
+              disabled={busy || stackCount === 0}
+            >
+              Done
+            </button>
+          ) : (
+            /* Spacer mirrors the Cancel button width to keep shutter centred */
+            <div className="camera-shutter-spacer" aria-hidden="true" />
+          )}
+        </div>
       </div>
 
+      {/* Thumbnail action sheet */}
+      {showThumbnailSheet !== null && (
+        <div
+          className="camera-thumb-action-backdrop"
+          onClick={() => setShowThumbnailSheet(null)}
+        >
+          <div
+            className="camera-thumb-action-sheet"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className="camera-thumb-action-btn" onClick={handleRetake}>
+              Retake
+            </button>
+            <button
+              className="camera-thumb-action-btn camera-thumb-action-btn--danger"
+              onClick={handleDeleteThumb}
+            >
+              Delete
+            </button>
+            <button
+              className="camera-thumb-action-btn camera-thumb-action-btn--cancel"
+              onClick={() => setShowThumbnailSheet(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Discard confirmation */}
       {showDiscard && (
         <div className="camera-discard-backdrop">
           <div className="camera-discard-dialog">
@@ -271,6 +417,20 @@ export default function CameraView({
           </div>
         </div>
       )}
+
+      {/* Cap limit sheet */}
+      <CapLimitSheet
+        open={showCapLimit}
+        onReadNow={handleCapLimitReadNow}
+        onGetMegaStack={handleCapLimitGetMegaStack}
+        onDismiss={handleCapLimitDismiss}
+      />
+
+      {/* Mega Stack "coming soon" — reachable from cap limit sheet */}
+      <MegaStackSheet
+        open={showMegaStack}
+        onClose={() => setShowMegaStack(false)}
+      />
     </div>,
     document.body
   );
