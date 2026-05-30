@@ -183,8 +183,13 @@ export function useTTS(text) {
       ? allVoices.findIndex((v) => v.voiceURI === voiceRef.current.voiceURI)
       : -1;
 
+    // Strip newlines from the spoken slice only — display is unchanged.
+    // 1-for-1 replacement (\n → space) keeps character offsets aligned with
+    // wordsRef so onRangeStart word-highlighting continues to work correctly.
+    const spokenText = text.slice(offset).replace(/\n/g, " ");
+
     const options = {
-      text:   text.slice(offset),
+      text:   spokenText,
       lang:   voiceRef.current?.lang ?? "en-US",
       rate:   rateRef.current,
       pitch:  pitchRef.current,
