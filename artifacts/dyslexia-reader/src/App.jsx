@@ -5,7 +5,6 @@ import VoiceLab from "./features/voice-lab/VoiceLab";
 import MegaStackSheet from "./features/stack/MegaStackSheet";
 import CameraView from "./features/scan/CameraView";
 import PagedReader from "./features/reader/PagedReader";
-import ImageStackPicker from "./features/imageStack/ImageStackPicker";
 import { clearSnippets } from "./features/stack/stackStore";
 import "./App.css";
 
@@ -13,7 +12,6 @@ function MainApp() {
   const [megaStackOpen, setMegaStackOpen] = useState(false);
   const [stackPhase, setStackPhase] = useState(null); // null | "capture" | "preview"
   const [stackCount, setStackCount] = useState(0);
-  const [imageStackOpen, setImageStackOpen] = useState(false);
 
   function handleStackDone(count) {
     setStackCount(count);
@@ -41,17 +39,6 @@ function MainApp() {
     );
   }
 
-  if (imageStackOpen) {
-    return (
-      <div className="app-root">
-        <div className="app-blob app-blob--pink" aria-hidden="true" />
-        <div className="app-blob app-blob--lavender" aria-hidden="true" />
-        <img src="/dexy-wordmark.png" alt="Dexy" className="app-logo" />
-        <ImageStackPicker onClose={() => setImageStackOpen(false)} />
-      </div>
-    );
-  }
-
   return (
     <div className="app-root">
       <div className="app-blob app-blob--pink" aria-hidden="true" />
@@ -63,12 +50,6 @@ function MainApp() {
           onClick={() => setStackPhase("capture")}
         >
           Stack
-        </button>
-        <button
-          className="app-action-btn"
-          onClick={() => setImageStackOpen(true)}
-        >
-          Read Images
         </button>
         <button
           className="app-action-btn app-action-btn--premium"
