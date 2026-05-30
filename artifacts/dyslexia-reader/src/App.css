@@ -88,9 +88,15 @@
   cursor: not-allowed;
 }
 
-/* Mega Stack — identical styling to Stack; only difference is the badge */
+/* Mega Stack / Open PDF — full-strength premium */
 .app-action-btn--premium {
   opacity: 1;
+}
+
+/* Stack — mid tier: paler lavender, between premium and free */
+.app-action-btn--mid {
+  background: linear-gradient(180deg, #DDD6F5 0%, #D0C8EC 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 8px 20px rgba(200, 180, 220, 0.22);
 }
 
 .app-action-label {

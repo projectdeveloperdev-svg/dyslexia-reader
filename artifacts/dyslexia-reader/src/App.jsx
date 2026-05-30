@@ -85,13 +85,8 @@ function MainApp() {
       <div className="app-blob app-blob--pink" aria-hidden="true" />
       <div className="app-blob app-blob--lavender" aria-hidden="true" />
       <img src="/dexy-wordmark.png" alt="Dexy" className="app-logo" />
+      {/* Top row — premium */}
       <div className="app-action-row">
-        <button
-          className="app-action-btn"
-          onClick={() => setStackPhase("capture")}
-        >
-          Stack
-        </button>
         <button
           className="app-action-btn app-action-btn--premium"
           onClick={() => setMegaStackOpen(true)}
@@ -104,6 +99,16 @@ function MainApp() {
           onClick={() => pdfInputRef.current?.click()}
         >
           <span className="app-action-label">Open PDF</span>
+        </button>
+      </div>
+
+      {/* Middle row — mid tier, Stack alone */}
+      <div className="app-action-row">
+        <button
+          className="app-action-btn app-action-btn--mid"
+          onClick={() => setStackPhase("capture")}
+        >
+          Stack
         </button>
       </div>
 
