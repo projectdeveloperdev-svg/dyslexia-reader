@@ -99,6 +99,14 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 8px 20px rgba(200, 180, 220, 0.22);
 }
 
+/* On mobile, Stack stretches to match the full-width scan buttons below it */
+@media (max-width: 599px) {
+  .app-action-btn--mid {
+    max-width: none;
+    width: 100%;
+  }
+}
+
 .app-action-label {
   line-height: 1;
 }
