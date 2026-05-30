@@ -51,7 +51,7 @@
 
 .app-action-btn {
   background: linear-gradient(180deg, #C9B8F0 0%, #B7A2E8 100%);
-  color: #1a1a1a;
+  color: #000;
   border: none;
   border-radius: 18px;
   padding: 1.1rem 2.5rem;
