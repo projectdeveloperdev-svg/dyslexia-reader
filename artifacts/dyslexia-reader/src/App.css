@@ -99,6 +99,13 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 8px 20px rgba(200, 180, 220, 0.22);
 }
 
+/* Row-to-row spacing: shrink the 3rem flex gap down to 0.75rem (= scan-buttons gap)
+   by applying negative margins to the mid row only via adjacent-sibling selector */
+.app-action-row + .app-action-row {
+  margin-top: -2.25rem;
+  margin-bottom: -2.25rem;
+}
+
 /* On mobile, Stack stretches to match the full-width scan buttons below it */
 @media (max-width: 599px) {
   .app-action-btn--mid {
