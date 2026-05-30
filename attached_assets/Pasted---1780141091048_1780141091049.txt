@@ -1,0 +1,87 @@
+
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+   ///////////////////////////
+      /////////////////////
+      
+0w~wji319zwqk.js:21 Download the Apollo DevTools for a better development experience: https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm
+0w~wji319zwqk.js:21 [LaunchDarkly] LaunchDarkly client initialized
+Dyslexia-Reader?settings.tab=customerUsage:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+0i8wy8tbht2ow.js:2 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+C @ 0i8wy8tbht2ow.js:2Understand this error
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'ambient-light-sensor'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'battery'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'execution-while-not-rendered'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'execution-while-out-of-viewport'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'layout-animations'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'legacy-image-formats'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'navigation-override'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'oversized-images'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'publickey-credentials'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'speaker-selection'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'unoptimized-images'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'unsized-media'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Unrecognized feature: 'pointer-lock'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Allow attribute will take precedence over 'allowfullscreen'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0i8wy8tbht2ow.js:2 Allow attribute will take precedence over 'allowpaymentrequest'.
+C @ 0i8wy8tbht2ow.js:2Understand this warning
+0ogrqjfozqp_3.js:2 Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://9f272a6a-c8a9-45b1-92c8-55643640bc98-00-37yjgk9h46fqr.worf.replit.dev') does not match the recipient window's origin ('https://replit.com').
+A @ 0ogrqjfozqp_3.js:2Understand this warning
+gravatar.com/avatar/8a07f32cbd66927b0e4e6f13bad1a7f554807f5b7d776cc4afa672833e44cf10?d=404:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+gravatar.com/avatar/7391980a62497e22001f1a007f4e3ab5a16025937eb7884107292d25e429f624?d=404:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+gravatar.com/avatar/dcd3cf12faa3baf78c91675620f5722fa9ad8036d5de5a8d425523dd5635f7ac?d=404:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+0i8wy8tbht2ow.js:2 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+C @ 0i8wy8tbht2ow.js:2Understand this error
+0ogrqjfozqp_3.js:2 Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://9f272a6a-c8a9-45b1-92c8-55643640bc98-00-37yjgk9h46fqr.worf.replit.dev') does not match the recipient window's origin ('https://replit.com').
+A @ 0ogrqjfozqp_3.js:2Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.Understand this error
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'ambient-light-sensor'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'battery'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'execution-while-not-rendered'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'execution-while-out-of-viewport'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'layout-animations'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'legacy-image-formats'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'navigation-override'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'oversized-images'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'publickey-credentials'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'speaker-selection'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'unoptimized-images'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Unrecognized feature: 'unsized-media'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Allow attribute will take precedence over 'allowfullscreen'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=artifacts%2Fdyslexia-reader:32 Allow attribute will take precedence over 'allowpaymentrequest'.Understand this warning
+gravatar.com/avatar/7391980a62497e22001f1a007f4e3ab5a16025937eb7884107292d25e429f624?d=404:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+gravatar.com/avatar/dcd3cf12faa3baf78c91675620f5722fa9ad8036d5de5a8d425523dd5635f7ac?d=404:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+gravatar.com/avatar/8a07f32cbd66927b0e4e6f13bad1a7f554807f5b7d776cc4afa672833e44cf10?d=404:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+gravatar.com/avatar/8a07f32cbd66927b0e4e6f13bad1a7f554807f5b7d776cc4afa672833e44cf10?d=404:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+gravatar.com/avatar/dcd3cf12faa3baf78c91675620f5722fa9ad8036d5de5a8d425523dd5635f7ac?d=404:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+20w~wji319zwqk.js:21 Haven't heard from the server in a while, resetting connection...
+(anonymous) @ 0w~wji319zwqk.js:21Understand this warning
+injected.js:37 [PdfPicker] handler fired, file: test_book.pdf 3147
+injected.js:37 [PdfPicker] Total pages: 3
+injected.js:37 [PdfPicker] Page 1 (first 100 chars): Chapter One  The morning was bright and clear. Tom opened the door and stepped outside. The garden w
+injected.js:37 [PdfPicker] handler fired, file: test_book.pdf 3147
+injected.js:37 [PdfPicker] Total pages: 3
+injected.js:37 [PdfPicker] Page 1 (first 100 chars): Chapter One  The morning was bright and clear. Tom opened the door and stepped outside. The garden w
