@@ -6,6 +6,7 @@ import MegaStackSheet from "./features/stack/MegaStackSheet";
 import CameraView from "./features/scan/CameraView";
 import PagedReader from "./features/reader/PagedReader";
 import { clearSnippets } from "./features/stack/stackStore";
+import { loadPdfPages } from "./features/pdf/pdfLoader";
 import "./App.css";
 
 // Lazy-import pdf.js only when needed — keeps initial bundle small.
@@ -51,18 +52,9 @@ function MainApp() {
       const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
 
-      console.log(`[PdfPicker] Total pages: ${pdf.numPages}`);
-
-      const pages = [];
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        const pageText = content.items.map((item) => item.str).join(" ");
-        pages.push(pageText);
-      }
-
-      const preview = pages[0]?.slice(0, 100) ?? "(no text found on page 1)";
-      console.log(`[PdfPicker] Page 1 (first 100 chars): ${preview}`);
+      clearSnippets();
+      await loadPdfPages(pdf);
+      setStackPhase("preview");
     } catch (err) {
       console.error("[PdfPicker] ERROR:", err);
       setPdfError("Could not read this PDF.");
