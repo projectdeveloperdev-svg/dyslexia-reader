@@ -35,6 +35,17 @@
   background: rgba(0, 0, 0, 0.06);
 }
 
+/* ── Page indicator ("2 / 5") ────────────────────────────────────────────── */
+.paged-reader-page-indicator {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #aaa;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ── Auto-advance toggle ─────────────────────────────────────────────────── */
 .paged-reader-autoadvance-label {
   display: flex;

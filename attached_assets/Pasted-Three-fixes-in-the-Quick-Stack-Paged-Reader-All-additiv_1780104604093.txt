@@ -1,0 +1,23 @@
+Three fixes in the Quick Stack Paged Reader. All additive/scoped — do not change reading behaviour, TTS, or single-scan.
+
+=== FIX 1: Button styling (src/App.css) ===
+The Stack and Mega Stack buttons look different; they should look IDENTICAL except for the badge. On device Mega Stack looks BRIGHTER; make Stack match it.
+- Remove opacity: 0.72 from .app-action-btn--premium (set to 1 or remove).
+- Ensure .app-action-btn and .app-action-btn--premium have identical background, brightness, shadow, styling. Only difference = the "Coming Soon" badge under Mega Stack.
+- Keep the badge. Keep both onClick behaviours. Touch no other file for this fix.
+
+=== FIX 2: Swipe ignores controls (src/features/reader/PagedReader.jsx) ===
+BUG: the swipe listener is on .paged-reader-viewport, which wraps ReaderView and all its controls. Dragging a control horizontally (e.g. the speed slider) is misread as a page swipe and flicks to the next page.
+FIX: in handleTouchStart, if the touch STARTS on or inside an interactive control, do NOT arm the swipe (leave touchStartXRef null so handleTouchEnd does nothing).
+- Detect via e.target.closest(). Treat these as controls: input, button, textarea, select, label, and anything inside the Reader controls (e.g. elements matching '.ocr-edit-wrapper, .read-button, [class*="readbutton"], [class*="ReadButton"], .copy-row, input[type="range"]').
+- Use a robust selector. The safest: if e.target.closest('input, button, textarea, select, label, [role="slider"]') is truthy, return early without setting touchStartXRef.
+- Page swipes must still work when the touch starts on the plain page/text area (not on a control).
+- Do not change goToPage, auto-advance, the 48px threshold, or anything else.
+
+=== FIX 3: Page indicator at top (PagedReader.jsx + PagedReader.css) ===
+Add a clear current-page indicator in the header so the user can see which page they're on, especially during auto-advance.
+- Show text like "Page 2 of 5" in the .paged-reader-header (or just under it). Use the existing pageIndex (0-based, so display pageIndex + 1) and snippets.length.
+- Style it cleanly to match the app (Inter font, subtle colour). Keep it small and unobtrusive.
+- This is IN ADDITION to the existing bottom dots — keep the dots too.
+
+After all three: list the files changed. Confirm single-scan ReaderView is untouched. Show the before/after for Fix 1 and Fix 2. Then stop.

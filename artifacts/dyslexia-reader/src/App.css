@@ -81,9 +81,9 @@
   cursor: not-allowed;
 }
 
-/* Mega Stack — interactive but premium / coming soon */
+/* Mega Stack — identical styling to Stack; only difference is the badge */
 .app-action-btn--premium {
-  opacity: 0.72;
+  opacity: 1;
 }
 
 .app-action-label {

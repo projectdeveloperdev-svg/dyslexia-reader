@@ -61,6 +61,10 @@ export default function PagedReader({ onExit }) {
 
   // ── Swipe detection ──────────────────────────────────────────────────
   function handleTouchStart(e) {
+    // Do not arm swipe when the touch starts on an interactive control.
+    if (e.target.closest('input, button, textarea, select, label, [role="slider"]')) {
+      return;
+    }
     touchStartXRef.current = e.touches[0].clientX;
   }
 
@@ -86,6 +90,9 @@ export default function PagedReader({ onExit }) {
         <button className="paged-reader-back" onClick={onExit}>
           ← Back
         </button>
+        <span className="paged-reader-page-indicator" aria-live="polite">
+          {pageIndex + 1} / {snippets.length}
+        </span>
         <label className="paged-reader-autoadvance-label">
           <span className="paged-reader-autoadvance-text">Auto-play next page</span>
           <span className={`paged-reader-toggle-track${autoAdvance ? " paged-reader-toggle-on" : ""}`}>
