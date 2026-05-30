@@ -52,7 +52,7 @@
 }
 
 .app-action-btn {
-  background: linear-gradient(180deg, #EFE9FB 0%, #E6E0F8 100%);
+  background: linear-gradient(180deg, #C3B2E8 0%, #B29BDF 100%);
   color: #1a1a1a;
   border: none;
   border-radius: 18px;
@@ -102,6 +102,6 @@
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #fff;
+  color: #5a3d96;
   line-height: 1;
 }
