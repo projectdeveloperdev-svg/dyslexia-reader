@@ -19,6 +19,7 @@ function MainApp() {
   const [stackCount, setStackCount] = useState(0);
 
   const pdfInputRef = useRef(null);
+  const [pdfError, setPdfError] = useState(null);
 
   function handleStackDone(count) {
     setStackCount(count);
@@ -37,25 +38,35 @@ function MainApp() {
 
   async function handlePdfFile(e) {
     const file = e.target.files?.[0];
+    // Diagnostic: fires before any async work so we know the handler ran.
+    console.log("[PdfPicker] handler fired, file:", file?.name, file?.size);
     if (!file) return;
-    e.target.value = "";
+    setPdfError(null);
 
-    const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
-    const pdf = await loadingTask.promise;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      // Reset only after the file is safely in memory.
+      e.target.value = "";
 
-    console.log(`[PdfPicker] Total pages: ${pdf.numPages}`);
+      const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
 
-    const pages = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items.map((item) => item.str).join(" ");
-      pages.push(pageText);
+      console.log(`[PdfPicker] Total pages: ${pdf.numPages}`);
+
+      const pages = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map((item) => item.str).join(" ");
+        pages.push(pageText);
+      }
+
+      const preview = pages[0]?.slice(0, 100) ?? "(no text found on page 1)";
+      console.log(`[PdfPicker] Page 1 (first 100 chars): ${preview}`);
+    } catch (err) {
+      console.error("[PdfPicker] ERROR:", err);
+      setPdfError("Could not read this PDF.");
     }
-
-    const preview = pages[0]?.slice(0, 100) ?? "(no text found on page 1)";
-    console.log(`[PdfPicker] Page 1 (first 100 chars): ${preview}`);
   }
 
   if (stackPhase === "preview") {
@@ -104,6 +115,11 @@ function MainApp() {
         style={{ display: "none" }}
         onChange={handlePdfFile}
       />
+      {pdfError && (
+        <p style={{ color: "#c0392b", fontFamily: "Inter, sans-serif", fontSize: "0.9rem", margin: "0.5rem 1rem 0" }}>
+          {pdfError}
+        </p>
+      )}
 
       <ScanSection />
       {stackPhase === "capture" && (
