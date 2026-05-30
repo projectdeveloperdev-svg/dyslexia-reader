@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Router as WouterRouter, Switch, Route } from "wouter";
 import ScanSection from "./features/scan/ScanSection";
 import VoiceLab from "./features/voice-lab/VoiceLab";
@@ -8,10 +8,17 @@ import PagedReader from "./features/reader/PagedReader";
 import { clearSnippets } from "./features/stack/stackStore";
 import "./App.css";
 
+// Lazy-import pdf.js only when needed — keeps initial bundle small.
+import * as pdfjs from "pdfjs-dist";
+import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+
 function MainApp() {
   const [megaStackOpen, setMegaStackOpen] = useState(false);
   const [stackPhase, setStackPhase] = useState(null); // null | "capture" | "preview"
   const [stackCount, setStackCount] = useState(0);
+
+  const pdfInputRef = useRef(null);
 
   function handleStackDone(count) {
     setStackCount(count);
@@ -26,6 +33,29 @@ function MainApp() {
     clearSnippets();
     setStackCount(0);
     setStackPhase(null);
+  }
+
+  async function handlePdfFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+
+    console.log(`[PdfPicker] Total pages: ${pdf.numPages}`);
+
+    const pages = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((item) => item.str).join(" ");
+      pages.push(pageText);
+    }
+
+    const preview = pages[0]?.slice(0, 100) ?? "(no text found on page 1)";
+    console.log(`[PdfPicker] Page 1 (first 100 chars): ${preview}`);
   }
 
   if (stackPhase === "preview") {
@@ -58,7 +88,23 @@ function MainApp() {
           <span className="app-action-label">Mega Stack</span>
           <span className="app-action-badge">Coming Soon</span>
         </button>
+        <button
+          className="app-action-btn app-action-btn--premium"
+          onClick={() => pdfInputRef.current?.click()}
+        >
+          <span className="app-action-label">Open PDF</span>
+        </button>
       </div>
+
+      {/* Hidden PDF file input */}
+      <input
+        ref={pdfInputRef}
+        type="file"
+        accept="application/pdf"
+        style={{ display: "none" }}
+        onChange={handlePdfFile}
+      />
+
       <ScanSection />
       {stackPhase === "capture" && (
         <CameraView
