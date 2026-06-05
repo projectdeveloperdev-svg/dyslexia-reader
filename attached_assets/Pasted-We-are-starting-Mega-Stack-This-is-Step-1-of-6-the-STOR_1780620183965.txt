@@ -1,0 +1,68 @@
+We are starting Mega Stack. This is Step 1 of 6: the STORAGE LAYER ONLY.
+No UI changes yet. Do not touch Quick Stack, the camera, or the reader.
+
+GOAL: be able to save a stack (images + text) to the phone's local disk,
+load it back, and delete it. Test via console logs only this step.
+
+USE: the Capacitor Filesystem plugin (@capacitor/filesystem). Install it
+if not already present. No database, no internet — phone-local only.
+
+CREATE a new file: src/features/megastack/megaStackStorage.js
+Export these functions:
+
+1. saveStack(images, ocrText)
+   - images = array of image data (in capture order)
+   - ocrText = array of OCR strings (same order, one per image)
+   - Generate a unique UUID for the stack (do NOT derive from content).
+   - Auto-name it "Stack N" where N = (number of existing saved stacks + 1).
+   - Write each image to disk as <uuid>-<index>.jpg in a megastacks folder.
+   - Write/update a single index JSON file (megastacks_index.json) that
+     holds an array of stack entries. Each entry:
+       { id, name, created (ISO date), pageCount, lastPage: 0,
+         imageFiles: [...in page order], ocrText: [...in page order] }
+   - Returns the new stack's id.
+
+2. listStacks()
+   - Reads the index JSON, returns the array of stack entries.
+   - If the index doesn't exist yet, return an empty array (first run).
+
+3. loadStackImage(stackId, pageIndex)
+   - Loads and returns ONE page image from disk (for lazy loading later).
+   - Do NOT load all images at once.
+
+4. renameStack(stackId, newName)
+   - Updates that stack's name in the index, saves.
+
+5. updateLastPage(stackId, pageIndex)
+   - Updates that stack's lastPage in the index, saves.
+
+6. deleteStack(stackId)
+   - Removes the stack's image files from disk AND its index entry.
+
+RULES (from my project guidelines):
+- Unique UUID per stack, generated at creation. Never derive from content.
+- No silent failures: wrap all filesystem calls in try/catch. On failure,
+  console.error a clear message AND re-throw or return a clear result so
+  callers can show a friendly message later. Do not swallow errors.
+- Guard for the index file not existing yet (first run = empty array).
+- Keep all storage code in this one file. No storage logic anywhere else.
+
+TEST (this step, console only):
+- Add a temporary throwaway button or console call that:
+  1. saves a fake stack (2-3 small test images + matching text),
+  2. lists stacks and logs them,
+  3. loads page 0 image and logs success,
+  4. renames it and re-lists,
+  5. deletes it and confirms the index is empty again.
+- Log each step clearly so we can verify in chrome://inspect on the phone.
+
+DO NOT:
+- Change Quick Stack, the camera, the home screen, or the reader.
+- Add a Library screen yet (that's Step 3).
+- Add any paywall/locking.
+- Build the actual capture-to-save wiring yet (that's Step 2).
+
+When done, tell me:
+- What files you created/changed.
+- How to run the test.
+- Anything you flagged as risky.
