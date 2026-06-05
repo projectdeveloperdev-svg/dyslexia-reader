@@ -1,0 +1,66 @@
+Step 5 of 6 for Mega Stack. Steps 1–3 are DONE and verified on device:
+storage layer, capture-saves-on-Done, and the Library screen (list + open
++ new stack) all work. (Step 4 lazy-loading is being done AFTER this.)
+
+GOAL: let the user RENAME and DELETE saved stacks from the Library screen.
+megaStackStorage.js already has renameStack(id, newName) and
+deleteStack(id) — both built and verified in the Step 1 test. This step is
+the UI to call them.
+
+HARD RULES (my project guidelines — follow exactly):
+- NO database. Phone-local only, via the existing megaStackStorage.js.
+  Only CALL its functions (renameStack, deleteStack) — add no new storage
+  logic.
+- CLEAN, ORGANISED CODE, no spaghetti:
+  - All Mega Stack UI stays under src/features/megastack/.
+  - Put the rename/delete UI in the Library component (or a small
+    dedicated subcomponent if it keeps things readable) — don't scatter it.
+  - Reuse the app's EXISTING confirmation-dialog style (the same look as
+    the "Discard X snippets?" dialog already used in Quick Stack) so the
+    delete confirmation matches the rest of the app. Don't invent a new
+    dialog style.
+- Do NOT change Quick Stack, the PDF reader, the camera, or the reader.
+- No paywall / locking (9.7).
+
+WHAT TO BUILD:
+On each saved-stack row in the Library, add a way to Rename and Delete.
+Keep it simple and uncluttered — e.g. a small "⋯" menu on the row, or
+Rename / Delete actions revealed on the row. Your call on the exact
+control, but keep the list clean and readable.
+
+1. RENAME:
+   - User picks Rename → a simple text input prefilled with the current
+     name (an inline edit, or a small dialog — whichever is cleaner).
+   - On confirm: call renameStack(id, newName), then refresh the list so
+     the new name shows.
+   - Ignore an empty/blank name (keep the old name if they clear it).
+   - Trim whitespace.
+
+2. DELETE:
+   - User picks Delete → show a confirmation using the app's EXISTING
+     dialog style: "Delete '<name>'?" with Delete / Cancel.
+   - On confirm: call deleteStack(id) (removes image files + index entry),
+     then refresh the list so the row disappears.
+   - On cancel: dismiss, no change.
+
+3. No silent failures (Lesson 2): if rename or delete throws, show a
+   friendly message and don't crash. The list should still be usable.
+
+4. After rename or delete, the Library list must reflect the change
+   immediately (re-fetch via listStacks or update in place — keep it
+   simple and correct).
+
+TEST PLAN (tell me how to verify on the phone):
+- In the Library, rename "Stack 2" to something → name updates in the list
+  and persists after closing/reopening the app.
+- Delete a stack → confirmation appears → confirm → row disappears, and
+  it's still gone after reopening the app (proves files + index entry were
+  removed from disk).
+- Cancel a delete → nothing changes.
+- Quick Stack + PDF reader still work unchanged.
+
+When done, tell me:
+- Files changed (confirm storage stayed in megaStackStorage.js).
+- Confirm you reused the existing confirmation-dialog style, not a new one.
+- How to test on the phone.
+- Anything risky flagged.

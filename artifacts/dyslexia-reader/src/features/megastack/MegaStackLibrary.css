@@ -127,25 +127,38 @@
   width: 100%;
 }
 
-.msl-row {
+/* Card — wraps all row states */
+.msl-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 14px rgba(200, 180, 220, 0.18);
+  overflow: hidden;
+}
+
+/* Top strip — shared by normal, menu-open, and rename modes */
+.msl-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* The tappable info area that opens the stack */
+.msl-row-tap {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  background: #fff;
+  flex: 1;
+  min-width: 0;
+  background: none;
   border: none;
-  border-radius: 16px;
-  padding: 1rem 1.1rem;
+  padding: 1rem 0 1rem 1.1rem;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 14px rgba(200, 180, 220, 0.18);
   text-align: left;
-  transition: box-shadow 0.15s ease, transform 0.1s ease;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
-.msl-row:active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(200, 180, 220, 0.12);
+.msl-row-tap:active .msl-row-name {
+  opacity: 0.7;
 }
 
 .msl-row-info {
@@ -153,6 +166,7 @@
   flex-direction: column;
   gap: 0.25rem;
   min-width: 0;
+  flex: 1;
 }
 
 .msl-row-name {
@@ -175,4 +189,194 @@
   color: #b29bdf;
   flex-shrink: 0;
   line-height: 1;
+}
+
+/* ⋯ button */
+.msl-menu-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #aaa;
+  cursor: pointer;
+  padding: 0.85rem 0.9rem;
+  line-height: 1;
+}
+
+.msl-menu-btn:active {
+  opacity: 0.5;
+}
+
+.msl-menu-btn--close {
+  font-size: 0.9rem;
+  color: #999;
+}
+
+/* ── ⋯ menu expanded — action buttons ───────────────────────────────────── */
+.msl-card-actions {
+  display: flex;
+  border-top: 1px solid #f0ecfa;
+}
+
+.msl-action-rename,
+.msl-action-delete {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 0.75rem 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.msl-action-rename {
+  color: #5a3d96;
+  border-right: 1px solid #f0ecfa;
+}
+
+.msl-action-rename:active {
+  background: #f5f0fd;
+}
+
+.msl-action-delete {
+  color: #922b21;
+}
+
+.msl-action-delete:active {
+  background: #fdf0ee;
+}
+
+/* ── Rename mode ─────────────────────────────────────────────────────────── */
+.msl-rename-row {
+  padding: 0.9rem 1rem 0.5rem;
+}
+
+.msl-rename-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  border: 2px solid #b29bdf;
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
+  background: #faf8ff;
+  outline: none;
+}
+
+.msl-rename-input:focus {
+  border-color: #7c5cbf;
+}
+
+.msl-rename-actions {
+  display: flex;
+  border-top: 1px solid #f0ecfa;
+  margin-top: 0.5rem;
+}
+
+.msl-action-save,
+.msl-action-cancel {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 0.75rem 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.msl-action-save {
+  color: #5a3d96;
+  border-right: 1px solid #f0ecfa;
+}
+
+.msl-action-save:active {
+  background: #f5f0fd;
+}
+
+.msl-action-save:disabled,
+.msl-action-cancel:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.msl-action-cancel {
+  color: #666;
+}
+
+.msl-action-cancel:active {
+  background: #f7f7f7;
+}
+
+/* ── Delete confirmation dialog (same visual style as camera discard) ─────── */
+.msl-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.msl-confirm-dialog {
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.75rem 1.5rem 1.25rem;
+  width: min(88vw, 320px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.msl-confirm-msg {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+  text-align: center;
+}
+
+.msl-confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.msl-confirm-btn--destructive,
+.msl-confirm-btn--keep {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.msl-confirm-btn--destructive {
+  background: #f0e8fb;
+  color: #7c0000;
+}
+
+.msl-confirm-btn--destructive:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.msl-confirm-btn--keep {
+  background: linear-gradient(180deg, #EFE9FB 0%, #E6E0F8 100%);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(200, 180, 220, 0.35);
+}
+
+.msl-confirm-btn--keep:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
