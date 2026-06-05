@@ -8,6 +8,7 @@ import MegaStackLibrary from "./features/megastack/MegaStackLibrary";
 import { clearSnippets, addSnippet } from "./features/stack/stackStore";
 import { loadPdfPages } from "./features/pdf/pdfLoader";
 import { commitMegaStack } from "./features/megastack/commitMegaStack";
+import { updateLastPage } from "./features/megastack/megaStackStorage.js";
 import "./App.css";
 
 import * as pdfjs from "pdfjs-dist";
@@ -25,6 +26,11 @@ function MainApp() {
   // null = home screen, "library" = library screen.
   const [readerReturnPhase, setReaderReturnPhase] = useState(null);
 
+  // Metadata for the currently-open saved Mega Stack.
+  // null for Quick Stack and PDF (those save no progress).
+  // { id: string, initialPage: number } for a saved stack from the library.
+  const [openStackMeta, setOpenStackMeta] = useState(null);
+
   // Quick Stack page count (used for nothing critical, kept for symmetry).
   const [stackCount, setStackCount] = useState(0);
 
@@ -35,6 +41,7 @@ function MainApp() {
 
   function handleStackDone(count) {
     setStackCount(count);
+    setOpenStackMeta(null);     // no progress saving for Quick Stack
     setReaderReturnPhase(null); // Back → home
     setStackPhase("preview");
   }
@@ -52,6 +59,7 @@ function MainApp() {
   function handleReaderBack() {
     clearSnippets();
     setStackCount(0);
+    setOpenStackMeta(null);
     const returnTo = readerReturnPhase;
     setReaderReturnPhase(null);
     setStackPhase(returnTo === "library" ? "library" : null);
@@ -79,8 +87,26 @@ function MainApp() {
     for (const text of pages) {
       addSnippet(null, text);
     }
+
+    // Clamp lastPage to a valid index — never crash on a bad value.
+    const maxPage = Math.max(0, pages.length - 1);
+    const initialPage = Math.min(Math.max(stack.lastPage ?? 0, 0), maxPage);
+
+    // Store the stack id so the reader can persist progress.
+    setOpenStackMeta({ id: stack.id, initialPage });
     setReaderReturnPhase("library"); // Back → library
     setStackPhase("preview");
+  }
+
+  // ── Progress save — Mega Stack only ──────────────────────────────────
+  // Fire-and-forget: a failed write is logged but never surfaces to the user.
+
+  function handlePageChange(pageIndex) {
+    const id = openStackMeta?.id;
+    if (!id) return;
+    updateLastPage(id, pageIndex).catch((err) => {
+      console.error("[App] updateLastPage failed:", err);
+    });
   }
 
   // ── PDF ───────────────────────────────────────────────────────────────
@@ -100,6 +126,7 @@ function MainApp() {
 
       clearSnippets();
       await loadPdfPages(pdf);
+      setOpenStackMeta(null);     // no progress saving for PDF
       setReaderReturnPhase(null); // Back → home
       setStackPhase("preview");
     } catch (err) {
@@ -136,7 +163,11 @@ function MainApp() {
         <div className="app-blob app-blob--pink" aria-hidden="true" />
         <div className="app-blob app-blob--lavender" aria-hidden="true" />
         <img src="/dexy-wordmark.png" alt="Dexy" className="app-logo" />
-        <PagedReader onExit={handleReaderBack} />
+        <PagedReader
+          onExit={handleReaderBack}
+          initialPage={openStackMeta?.initialPage ?? 0}
+          onPageChange={openStackMeta ? handlePageChange : undefined}
+        />
       </div>
     );
   }

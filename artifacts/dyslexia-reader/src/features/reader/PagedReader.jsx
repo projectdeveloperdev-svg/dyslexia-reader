@@ -3,11 +3,18 @@ import { getSnippets } from "../stack/stackStore";
 import ReaderView from "./ReaderView";
 import "./PagedReader.css";
 
-export default function PagedReader({ onExit }) {
+/**
+ * Props:
+ *  onExit()                    — back button handler
+ *  initialPage?  number        — page to open on (default 0). Clamped by caller.
+ *  onPageChange? (idx: number) — fired once per settled page (Mega Stack only).
+ *                                Never called for Quick Stack / PDF (those pass nothing).
+ */
+export default function PagedReader({ onExit, initialPage = 0, onPageChange }) {
   // Read the stack once on mount — stable for the lifetime of this component.
   const [snippets] = useState(() => getSnippets().slice());
 
-  const [pageIndex, setPageIndex] = useState(0);
+  const [pageIndex, setPageIndex] = useState(initialPage);
   const [slideDir, setSlideDir] = useState(null); // "right" | "left" | null
   const [autoAdvance, setAutoAdvance] = useState(true);
 
@@ -30,6 +37,8 @@ export default function PagedReader({ onExit }) {
       setAutoPlayTrigger(0);
     }
     setPageIndex(newIndex);
+    // Notify caller (Mega Stack only — Quick Stack / PDF pass no onPageChange).
+    onPageChangeRef.current?.(newIndex);
   }
 
   // Called by the current page's ReaderView when TTS ends naturally.
@@ -40,6 +49,11 @@ export default function PagedReader({ onExit }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Stable refs for the callback above to avoid stale closure bugs ----
+  // onPageChange is kept in a ref so goToPage never captures a stale closure,
+  // and so updating the prop never re-renders the component.
+  const onPageChangeRef = useRef(onPageChange);
+  onPageChangeRef.current = onPageChange;
+
   const autoAdvanceRef = useRef(autoAdvance);
   autoAdvanceRef.current = autoAdvance;
   const pageIndexRef = useRef(pageIndex);
