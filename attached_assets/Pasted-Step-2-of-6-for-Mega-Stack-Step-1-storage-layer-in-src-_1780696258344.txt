@@ -1,0 +1,66 @@
+Step 2 of 6 for Mega Stack. Step 1 (storage layer in
+src/features/megastack/megaStackStorage.js) is DONE and verified on device
+— all 6 functions work. Do NOT change that file's behaviour.
+
+GOAL: wire the Mega Stack CAPTURE flow to the storage layer. When the user
+finishes a Mega Stack capture and taps Done, save the captured images +
+OCR text to disk (using the existing saveStack), then open the result in
+the existing PagedReader.
+
+HARD RULES (my project guidelines — follow exactly):
+- NO database of any kind. NO Supabase, NO Replit DB, NO cloud. Phone-local
+  only, via the existing megaStackStorage.js. Add no new storage mechanism.
+- CLEAN, ORGANISED CODE. No spaghetti. Specifically:
+  - All filesystem/storage code stays in megaStackStorage.js. Do NOT write
+    new file-handling logic anywhere else — only CALL its exported
+    functions.
+  - Keep all Mega Stack code under src/features/megastack/.
+  - REUSE the existing camera capture pipeline and the existing PagedReader
+    — do NOT copy-paste or fork them. If Quick Stack and Mega Stack share
+    capture logic, share it, don't duplicate it.
+  - One responsibility per file. Small, readable functions.
+- Do NOT touch or change Quick Stack's behaviour (it stays capped at 5,
+  throwaway). Do NOT touch the PDF reader.
+- No paywall / no locking (that's 9.7).
+
+WHAT TO BUILD:
+1. Mega Stack capture mode = the SAME in-camera capture as Quick Stack,
+   with these differences ONLY:
+   - NO 5-cap. No amber warning, no 6th-tap limit sheet. Counter just
+     counts up (1, 2, 3, 4, 5, 6, …) with no cap.
+   - Each shutter tap runs the SAME existing normalisation pipeline
+     (orientation fix, JPEG 0.98, 4000px cap) and the SAME OCR as Quick
+     Stack, storing image + OCR text in memory in capture order.
+   - Done button ends capture.
+
+2. On Done:
+   - Call saveStack(images, ocrText) from megaStackStorage.js with the
+     captured images + their OCR text, in capture order.
+   - It auto-names "Stack N" and returns the new stack id (already built).
+   - Then load that saved stack into the EXISTING PagedReader and show it,
+     starting on page 0. Feed it via the same addSnippet / stackStore path
+     Quick Stack and the PDF reader already use — do not invent a new
+     reader path.
+   - No silent failures (Lesson 2): if saveStack throws, show a friendly
+     message ("Could not save this stack.") and do not crash. Keep the
+     captured session so the user doesn't lose their work.
+
+3. For THIS step, entry can be temporary: it's fine to trigger Mega Stack
+   capture from the existing Mega Stack button directly into capture mode.
+   The Library screen (list of saved stacks) is STEP 3 — do not build it
+   yet. Just prove: capture unlimited → Done → saves to disk → opens in
+   reader.
+
+TEST PLAN (tell me how to verify on the phone):
+- Capture e.g. 6+ snippets (proving the cap is gone), tap Done.
+- Confirm it saves (console log from saveStack) and opens in the reader.
+- Confirm swipe + TTS + auto-advance work (reused reader).
+- Confirm Quick Stack still works unchanged (capped at 5).
+
+When done, tell me:
+- Exactly what files you created/changed (and confirm storage code stayed
+  in megaStackStorage.js only).
+- How capture logic is shared with Quick Stack (reused, not duplicated) —
+  name the shared module.
+- How to test on the phone.
+- Anything risky you flagged.

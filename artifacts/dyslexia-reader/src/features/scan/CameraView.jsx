@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { CameraPreview } from "@capacitor-community/camera-preview";
+import { normaliseCapture } from "./normaliseCapture";
 import { runOCR } from "../ocr/runOCR";
 import {
   addSnippet,
@@ -12,46 +13,7 @@ import CapLimitSheet from "../stack/CapLimitSheet";
 import MegaStackSheet from "../stack/MegaStackSheet";
 import "./CameraView.css";
 
-const MAX_LONGEST_EDGE = 4000;
 const STACK_CAP = 5;
-
-/**
- * Normalises a raw JPEG base64 string captured by camera-preview:
- *  1. Applies EXIF orientation so pixels are physically upright (matching what
- *     @capacitor/camera's DataUrl path did automatically).
- *  2. Scales down if the longest post-rotation edge exceeds MAX_LONGEST_EDGE.
- *
- * Returns a data URL (image/jpeg, no EXIF) ready for ML Kit.
- */
-async function normaliseCapture(base64) {
-  const dataUrl = `data:image/jpeg;base64,${base64}`;
-
-  const resp = await fetch(dataUrl);
-  const blob = await resp.blob();
-
-  let bitmap;
-  try {
-    bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" });
-  } catch {
-    // Fallback: WebView doesn't support imageOrientation option — use raw bitmap.
-    bitmap = await createImageBitmap(blob);
-  }
-
-  // Post-rotation dimensions (bitmap.width/height reflect the upright image).
-  const longest = Math.max(bitmap.width, bitmap.height);
-  const scale = longest > MAX_LONGEST_EDGE ? MAX_LONGEST_EDGE / longest : 1;
-  const cw = Math.round(bitmap.width * scale);
-  const ch = Math.round(bitmap.height * scale);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = cw;
-  canvas.height = ch;
-  canvas.getContext("2d").drawImage(bitmap, 0, 0, cw, ch);
-  bitmap.close();
-
-  return canvas.toDataURL("image/jpeg", 0.98);
-}
-
 const PREVIEW_ID = "camera-preview-container";
 
 export default function CameraView({
@@ -62,35 +24,37 @@ export default function CameraView({
   onReset,
   // shared
   mode = "scan",
-  // stack mode props
-  onDone,
+  // stack / megastack mode props
+  onDone,        // Quick Stack: called with (count) on Done
+  onMegaDone,    // Mega Stack:  called with (images, ocrTexts) on Done; may throw
   onStackCancel,
 }) {
   const [active, setActive] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // ── Stack-mode-only state ──────────────────────────────────────────────
-  const [thumbnails, setThumbnails] = useState([]); // data URLs in capture order
+  // ── Stack-mode state (shared by "stack" and "megastack") ──────────────
+  const [thumbnails, setThumbnails] = useState([]);      // data URLs in capture order
+  const [megaOcrTexts, setMegaOcrTexts] = useState([]);  // parallel; used in megastack only
   const [stackCount, setStackCount] = useState(0);
-  const [retakeIndex, setRetakeIndex] = useState(null); // slot being retaken, or null
-  const [showThumbnailSheet, setShowThumbnailSheet] = useState(null); // index | null
+  const [retakeIndex, setRetakeIndex] = useState(null);
+  const [showThumbnailSheet, setShowThumbnailSheet] = useState(null);
   const [showDiscard, setShowDiscard] = useState(false);
+  const [megaSaveError, setMegaSaveError] = useState(null);
+
+  // ── Quick Stack only ──────────────────────────────────────────────────
   const [showCapLimit, setShowCapLimit] = useState(false);
   const [capLimitSeen, setCapLimitSeen] = useState(false);
   const [showMegaStack, setShowMegaStack] = useState(false);
 
-  // Stack mode: auto-open camera on mount.
+  // Auto-open camera on mount for both stack modes.
   useEffect(() => {
-    if (mode === "stack") {
+    if (mode === "stack" || mode === "megastack") {
       document.body.classList.add("camera-open");
       setActive(true);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Start the native camera preview AFTER the portal div is committed to the
-  // DOM. React guarantees useEffect runs after paint, so the element exists.
-  // The cleanup handler stops the camera whenever active goes false or the
-  // component unmounts.
   useEffect(() => {
     if (!active) return;
 
@@ -107,15 +71,12 @@ export default function CameraView({
     });
 
     return () => {
-      // Runs when active → false or on unmount. stop() is also called
-      // explicitly in handleShutter before setActive(false) so we may
-      // double-call here; the catch absorbs the no-op error.
       CameraPreview.stop().catch(() => {});
       document.body.classList.remove("camera-open");
     };
   }, [active]);
 
-  // ── Scan mode handlers (unchanged) ────────────────────────────────────
+  // ── Scan mode handlers ────────────────────────────────────────────────
 
   function openCamera() {
     document.body.classList.add("camera-open");
@@ -123,7 +84,6 @@ export default function CameraView({
   }
 
   function cancelCamera() {
-    // Changing active to false triggers the useEffect cleanup → stop().
     setActive(false);
     setBusy(false);
   }
@@ -142,8 +102,6 @@ export default function CameraView({
       return;
     }
 
-    // Stop the preview immediately so the screen returns to normal while OCR
-    // runs (which can take a moment on device).
     try { await CameraPreview.stop(); } catch {}
     document.body.classList.remove("camera-open");
     setActive(false);
@@ -161,20 +119,19 @@ export default function CameraView({
     }
   }
 
-  // ── Stack mode handlers ────────────────────────────────────────────────
+  // ── Stack / Mega Stack shutter ────────────────────────────────────────
 
   async function handleStackShutter() {
-    if (busy) return;
+    if (busy || saving) return;
 
     const isRetaking = retakeIndex !== null;
 
-    // Cap gate: only applies when adding a new snippet (not retaking).
-    if (!isRetaking && stackCount >= STACK_CAP) {
+    // Cap gate: Quick Stack only — Mega Stack has no limit.
+    if (mode === "stack" && !isRetaking && stackCount >= STACK_CAP) {
       if (!capLimitSeen) {
         setCapLimitSeen(true);
         setShowCapLimit(true);
       }
-      // If already seen: silent no-op — no nag.
       return;
     }
 
@@ -190,24 +147,46 @@ export default function CameraView({
       return;
     }
 
-    // Camera stays open — process OCR while viewfinder remains live.
     try {
       const dataUrl = await normaliseCapture(base64);
       const ocrText = await runOCR(dataUrl);
 
-      if (isRetaking) {
-        replaceSnippet(retakeIndex, dataUrl, ocrText);
-        setThumbnails((prev) => {
-          const next = [...prev];
-          next[retakeIndex] = dataUrl;
-          return next;
-        });
-        setRetakeIndex(null);
-        // stackCount stays the same
+      if (mode === "megastack") {
+        // Mega Stack: keep images + ocrTexts in local state only.
+        // stackStore is NOT populated during capture — commitMegaStack does
+        // that atomically after a successful disk save.
+        if (isRetaking) {
+          setThumbnails((prev) => {
+            const next = [...prev];
+            next[retakeIndex] = dataUrl;
+            return next;
+          });
+          setMegaOcrTexts((prev) => {
+            const next = [...prev];
+            next[retakeIndex] = ocrText;
+            return next;
+          });
+          setRetakeIndex(null);
+        } else {
+          setThumbnails((prev) => [...prev, dataUrl]);
+          setMegaOcrTexts((prev) => [...prev, ocrText]);
+          setStackCount((c) => c + 1);
+        }
       } else {
-        addSnippet(dataUrl, ocrText);
-        setThumbnails((prev) => [...prev, dataUrl]);
-        setStackCount((c) => c + 1);
+        // Quick Stack: store in stackStore immediately.
+        if (isRetaking) {
+          replaceSnippet(retakeIndex, dataUrl, ocrText);
+          setThumbnails((prev) => {
+            const next = [...prev];
+            next[retakeIndex] = dataUrl;
+            return next;
+          });
+          setRetakeIndex(null);
+        } else {
+          addSnippet(dataUrl, ocrText);
+          setThumbnails((prev) => [...prev, dataUrl]);
+          setStackCount((c) => c + 1);
+        }
       }
     } catch (e) {
       console.error("[CameraView] stack OCR failed:", e);
@@ -215,6 +194,8 @@ export default function CameraView({
 
     setBusy(false);
   }
+
+  // ── Cancel / discard ──────────────────────────────────────────────────
 
   function handleStackCancel() {
     if (stackCount === 0) {
@@ -226,6 +207,8 @@ export default function CameraView({
   }
 
   function handleDiscard() {
+    // Quick Stack populated stackStore during capture; Mega Stack did not.
+    // clearSnippets is a no-op for Mega Stack but safe to call either way.
     clearSnippets();
     setShowDiscard(false);
     setActive(false);
@@ -236,9 +219,29 @@ export default function CameraView({
     setShowDiscard(false);
   }
 
-  function handleDone() {
-    setActive(false);
-    onDone(stackCount);
+  // ── Done ──────────────────────────────────────────────────────────────
+
+  async function handleDone() {
+    if (mode === "megastack") {
+      setSaving(true);
+      setMegaSaveError(null);
+      try {
+        // onMegaDone is async and throws on save failure.
+        // Keep the camera overlay open until it resolves so the user's
+        // captured session is preserved if something goes wrong.
+        await onMegaDone([...thumbnails], [...megaOcrTexts]);
+        // Success: App.jsx has already navigated to the reader. Close overlay.
+        setActive(false);
+      } catch (err) {
+        console.error("[CameraView] Mega Stack save failed:", err);
+        setMegaSaveError("Could not save this stack. Please try again.");
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      setActive(false);
+      onDone(stackCount);
+    }
   }
 
   // ── Thumbnail action sheet handlers ───────────────────────────────────
@@ -250,16 +253,20 @@ export default function CameraView({
 
   function handleDeleteThumb() {
     const idx = showThumbnailSheet;
-    deleteSnippet(idx);
+
+    if (mode === "megastack") {
+      setMegaOcrTexts((prev) => prev.filter((_, i) => i !== idx));
+    } else {
+      deleteSnippet(idx);
+    }
+
     setThumbnails((prev) => prev.filter((_, i) => i !== idx));
     const newCount = stackCount - 1;
     setStackCount(newCount);
-    // Re-arm the cap limit whenever the count drops below the cap.
-    if (newCount < STACK_CAP && capLimitSeen) {
-      console.log("[CameraView] capLimitSeen reset — count dropped below cap");
+
+    if (mode === "stack" && newCount < STACK_CAP && capLimitSeen) {
       setCapLimitSeen(false);
     }
-    // Adjust retakeIndex if necessary.
     if (retakeIndex === idx) {
       setRetakeIndex(null);
     } else if (retakeIndex !== null && retakeIndex > idx) {
@@ -268,7 +275,7 @@ export default function CameraView({
     setShowThumbnailSheet(null);
   }
 
-  // ── CapLimitSheet handlers ─────────────────────────────────────────────
+  // ── Quick Stack cap-limit sheet handlers ──────────────────────────────
 
   function handleCapLimitReadNow() {
     setShowCapLimit(false);
@@ -285,7 +292,7 @@ export default function CameraView({
     setShowCapLimit(false);
   }
 
-  // ── Inactive: render trigger button (scan mode only) ───────────────────
+  // ── Inactive: render trigger (scan mode only) ─────────────────────────
 
   if (!active) {
     if (mode === "scan") {
@@ -295,82 +302,113 @@ export default function CameraView({
         </button>
       );
     }
-    // Stack mode with !active means we're transitioning out — render nothing.
     return null;
   }
 
-  // ── Derived display values ─────────────────────────────────────────────
+  // ── Derived values ────────────────────────────────────────────────────
 
-  const atCap = stackCount >= STACK_CAP;
-  const shutterActive = !busy && (retakeIndex !== null || !atCap || !capLimitSeen);
-  // Pill is amber when at cap (whether or not limit sheet has been seen).
+  const isQuickStack = mode === "stack";
+  const atCap = isQuickStack && stackCount >= STACK_CAP;
   const pillAmber = atCap;
+  // Shutter fires unless busy/saving. Quick Stack adds the cap-gate check.
+  const shutterActive =
+    !busy &&
+    !saving &&
+    (mode === "megastack" || retakeIndex !== null || !atCap || !capLimitSeen);
 
-  // ── Active: full-screen overlay portalled to document.body ─────────────
-  // The native camera layer sits behind the WebView; this div is transparent
-  // so the camera shows through, with the control bar at the bottom.
+  // ── Active: full-screen overlay ───────────────────────────────────────
+
   return createPortal(
     <div id={PREVIEW_ID} className="camera-overlay">
       {/* Counter pill */}
-      {mode === "stack" && (
+      {(mode === "stack" || mode === "megastack") && (
         <div
           className={`camera-counter-pill${pillAmber ? " camera-counter-pill--amber" : ""}`}
           aria-live="polite"
         >
-          <span>{stackCount} / {STACK_CAP}</span>
-          {pillAmber && !capLimitSeen && (
-            <span className="camera-counter-sub">Last snippet — tap Done to read.</span>
+          <span>
+            {stackCount}
+            {isQuickStack ? ` / ${STACK_CAP}` : ""}
+          </span>
+          {isQuickStack && pillAmber && !capLimitSeen && (
+            <span className="camera-counter-sub">
+              Last snippet — tap Done to read.
+            </span>
           )}
         </div>
       )}
 
-      {/* Bottom area: thumbnail strip + controls grouped together */}
+      {/* Bottom area */}
       <div className="camera-bottom">
-        {/* Thumbnail strip — visible after first capture */}
-        {mode === "stack" && thumbnails.length > 0 && (
-          <div className="camera-thumb-strip" role="list" aria-label="Captured snippets">
+        {/* Thumbnail strip */}
+        {(mode === "stack" || mode === "megastack") && thumbnails.length > 0 && (
+          <div
+            className="camera-thumb-strip"
+            role="list"
+            aria-label="Captured snippets"
+          >
             {thumbnails.map((src, i) => (
               <button
                 key={i}
-                className={`camera-thumb-btn${retakeIndex === i ? " camera-thumb-btn--retaking" : ""}`}
+                className={`camera-thumb-btn${
+                  retakeIndex === i ? " camera-thumb-btn--retaking" : ""
+                }`}
                 onClick={() => setShowThumbnailSheet(i)}
-                aria-label={`Snippet ${i + 1}${retakeIndex === i ? ", retaking" : ""}`}
+                aria-label={`Snippet ${i + 1}${
+                  retakeIndex === i ? ", retaking" : ""
+                }`}
                 role="listitem"
               >
                 <img src={src} className="camera-thumb-img" alt="" />
                 {retakeIndex === i && (
-                  <div className="camera-thumb-retake-badge" aria-hidden="true">↺</div>
+                  <div className="camera-thumb-retake-badge" aria-hidden="true">
+                    ↺
+                  </div>
                 )}
               </button>
             ))}
           </div>
         )}
 
+        {/* Save error — shown inline above controls when a Mega Stack save fails */}
+        {mode === "megastack" && megaSaveError && (
+          <p className="camera-save-error" role="alert">
+            {megaSaveError}
+          </p>
+        )}
+
         {/* Control bar */}
         <div className="camera-controls">
           <button
             className="camera-cancel-btn"
-            onClick={mode === "stack" ? handleStackCancel : cancelCamera}
-            disabled={busy}
+            onClick={
+              mode === "stack" || mode === "megastack"
+                ? handleStackCancel
+                : cancelCamera
+            }
+            disabled={busy || saving}
           >
             Cancel
           </button>
           <button
             className="camera-shutter-btn"
-            onClick={mode === "stack" ? handleStackShutter : handleShutter}
+            onClick={
+              mode === "stack" || mode === "megastack"
+                ? handleStackShutter
+                : handleShutter
+            }
             disabled={!shutterActive}
             aria-label="Take photo"
           />
-          {mode === "stack" ? (
+          {mode === "stack" || mode === "megastack" ? (
             <button
               className="camera-done-btn"
               onClick={handleDone}
-              disabled={busy || stackCount === 0}
+              disabled={busy || saving || stackCount === 0}
             >
-              Done
+              {saving ? "Saving…" : "Done"}
             </button>
           ) : (
-            /* Spacer mirrors the Cancel button width to keep shutter centred */
             <div className="camera-shutter-spacer" aria-hidden="true" />
           )}
         </div>
@@ -424,19 +462,23 @@ export default function CameraView({
         </div>
       )}
 
-      {/* Cap limit sheet */}
-      <CapLimitSheet
-        open={showCapLimit}
-        onReadNow={handleCapLimitReadNow}
-        onGetMegaStack={handleCapLimitGetMegaStack}
-        onDismiss={handleCapLimitDismiss}
-      />
+      {/* Cap limit sheet — Quick Stack only */}
+      {isQuickStack && (
+        <CapLimitSheet
+          open={showCapLimit}
+          onReadNow={handleCapLimitReadNow}
+          onGetMegaStack={handleCapLimitGetMegaStack}
+          onDismiss={handleCapLimitDismiss}
+        />
+      )}
 
-      {/* Mega Stack "coming soon" — reachable from cap limit sheet */}
-      <MegaStackSheet
-        open={showMegaStack}
-        onClose={() => setShowMegaStack(false)}
-      />
+      {/* Mega Stack "coming soon" — reachable from Quick Stack cap limit sheet */}
+      {isQuickStack && (
+        <MegaStackSheet
+          open={showMegaStack}
+          onClose={() => setShowMegaStack(false)}
+        />
+      )}
     </div>,
     document.body
   );
