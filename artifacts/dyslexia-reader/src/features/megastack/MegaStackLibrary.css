@@ -1,0 +1,178 @@
+/* ── Root ────────────────────────────────────────────────────────────────── */
+.msl-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.msl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem 0.75rem;
+  gap: 0.5rem;
+}
+
+.msl-back {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  color: #5a3d96;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.msl-back:active {
+  opacity: 0.6;
+}
+
+.msl-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  text-align: center;
+  flex: 1;
+}
+
+.msl-new {
+  background: linear-gradient(180deg, #C3B2E8 0%, #B29BDF 100%);
+  border: none;
+  border-radius: 12px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.92rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  color: #1a1a1a;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(180, 160, 220, 0.35);
+  flex-shrink: 0;
+}
+
+.msl-new:active {
+  opacity: 0.8;
+  transform: translateY(1px);
+}
+
+/* ── Error banner ─────────────────────────────────────────────────────────── */
+.msl-error {
+  margin: 0 1rem 0.75rem;
+  padding: 0.55rem 0.75rem;
+  background: rgba(192, 57, 43, 0.1);
+  border: 1px solid rgba(192, 57, 43, 0.25);
+  border-radius: 10px;
+  color: #922b21;
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+/* ── Body (scrollable) ────────────────────────────────────────────────────── */
+.msl-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 0 env(safe-area-inset-bottom, 1rem);
+}
+
+/* ── Loading / empty ─────────────────────────────────────────────────────── */
+.msl-loading {
+  text-align: center;
+  color: #888;
+  margin-top: 3rem;
+  font-size: 1rem;
+}
+
+.msl-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 3.5rem;
+  padding: 0 2rem;
+}
+
+.msl-empty-msg {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #555;
+  margin: 0;
+}
+
+.msl-empty-hint {
+  font-size: 0.95rem;
+  color: #888;
+  margin: 0;
+  text-align: center;
+}
+
+/* ── Stack list ──────────────────────────────────────────────────────────── */
+.msl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.msl-item {
+  width: 100%;
+}
+
+.msl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 14px rgba(200, 180, 220, 0.18);
+  text-align: left;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+  gap: 0.75rem;
+}
+
+.msl-row:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(200, 180, 220, 0.12);
+}
+
+.msl-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.msl-row-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msl-row-meta {
+  font-size: 0.82rem;
+  color: #888;
+  font-weight: 400;
+}
+
+.msl-row-arrow {
+  font-size: 1.4rem;
+  color: #b29bdf;
+  flex-shrink: 0;
+  line-height: 1;
+}

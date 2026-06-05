@@ -1,0 +1,67 @@
+Step 3 of 6 for Mega Stack. Steps 1 (storage) and 2 (capture saves on
+Done) are DONE and verified on device — saveStack writes correctly and
+returns a stack id.
+
+GOAL: build the LIBRARY SCREEN — the list of saved stacks. This is what
+lets the user come back to stacks after closing the app. Saved stacks
+currently exist on disk but there is no UI to see them yet.
+
+HARD RULES (my project guidelines — follow exactly):
+- NO database. Phone-local only, via the existing megaStackStorage.js.
+  Add no new storage mechanism. Only CALL its exported functions
+  (listStacks, loadStackImage, etc.).
+- CLEAN, ORGANISED CODE, no spaghetti:
+  - Keep all Mega Stack UI under src/features/megastack/.
+  - The Library screen is its own component file.
+  - Do NOT duplicate the reader — reuse the existing PagedReader / the
+    same stackStore path Quick Stack, PDF, and Step 2 already use.
+  - One responsibility per file.
+- Do NOT change Quick Stack, the PDF reader, or the camera capture.
+- No paywall / locking (that's 9.7).
+
+WHAT TO BUILD:
+1. Change the Mega Stack button behaviour:
+   - Tapping "Mega Stack" now opens the LIBRARY SCREEN (not straight into
+     the camera as in Step 2).
+   - From Step 2, capture is currently launched directly — move that so
+     capture is started by a "+ New Stack" button INSIDE the library.
+
+2. Library screen (new component, e.g.
+   src/features/megastack/MegaStackLibrary.jsx):
+   - On open, call listStacks() and render each saved stack as a
+     row/card showing: name, page count, and date created.
+   - "+ New Stack" button at the top → launches the existing Mega Stack
+     capture flow (the Step 2 path). After capture saves, return to the
+     library so the new stack appears in the list (or open it in the
+     reader, then back returns to the library — your call, keep it simple).
+   - Tap a saved stack row → open it in the existing PagedReader. Load its
+     saved OCR text for the pages (do NOT re-run OCR — use the stored
+     text). Start on page 0 for now (lastPage/resume is Step 6).
+   - Empty state: if listStacks() returns [], show a friendly message:
+     "No saved stacks yet. Tap + New Stack to start."
+   - A clear way back to the home screen.
+
+3. Loading images: for THIS step, when opening a saved stack for reading,
+   it's acceptable to load its page images via loadStackImage as needed.
+   TRUE lazy-load-and-release on swipe is Step 4 — don't over-engineer it
+   here, but don't load every image of every stack just to show the list
+   (the list shows text info: name/count/date, NOT all images).
+
+4. No silent failures (Lesson 2): if listStacks or opening a stack throws,
+   show a friendly message, don't crash.
+
+TEST PLAN (tell me how to verify on the phone):
+- Open Mega Stack → see the library. The "Stack 2" (7 pages) saved earlier
+  should appear in the list (proves load-from-disk works across app
+  restarts).
+- Tap it → opens in the reader with its pages, swipe + TTS work.
+- "+ New Stack" → capture a few → save → new stack appears in the list.
+- Close and reopen the app → the saved stacks are STILL there (the whole
+  point of this feature).
+- Quick Stack and PDF reader still work unchanged.
+
+When done, tell me:
+- Files created/changed (confirm storage stayed in megaStackStorage.js).
+- Confirm the reader is reused, not duplicated.
+- How to test on the phone.
+- Anything risky flagged.
