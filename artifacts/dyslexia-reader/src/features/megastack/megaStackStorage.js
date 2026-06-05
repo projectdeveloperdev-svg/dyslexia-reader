@@ -5,6 +5,31 @@ const INDEX_PATH = `${MEGASTACKS_DIR}/megastacks_index.json`;
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
+/**
+ * Ensure the megastacks directory exists before writing image files.
+ * mkdir with recursive:true is a no-op if the directory already exists.
+ */
+async function ensureDir() {
+  try {
+    await Filesystem.mkdir({
+      path: MEGASTACKS_DIR,
+      directory: Directory.Data,
+      recursive: true,
+    });
+  } catch (err) {
+    // "already exists" is not an error — ignore it.
+    const msg = err?.message ?? "";
+    if (
+      !msg.includes("already exists") &&
+      !msg.includes("Directory exists") &&
+      !msg.includes("EEXIST")
+    ) {
+      console.error("[megaStackStorage] ensureDir failed:", err);
+      throw err;
+    }
+  }
+}
+
 async function readIndex() {
   try {
     const result = await Filesystem.readFile({
@@ -60,6 +85,9 @@ export async function saveStack(images, ocrText) {
   // Read existing stacks to determine the auto-name number.
   const existing = await listStacks();
   const name = `Stack ${existing.length + 1}`;
+
+  // Guarantee the directory exists before any image writes.
+  await ensureDir();
 
   // Write each image file.
   const imageFiles = [];
@@ -134,7 +162,8 @@ export async function loadStackImage(stackId, pageIndex) {
       directory: Directory.Data,
     });
     console.log(`[megaStackStorage] loadStackImage: loaded page ${pageIndex} from ${filePath} (${result.data?.length ?? 0} chars)`);
-    return result.data; // raw base64
+    // Return as a data URL so callers can use it directly in <img src>.
+    return `data:image/jpeg;base64,${result.data}`;
   } catch (err) {
     console.error(`[megaStackStorage] loadStackImage: failed reading ${filePath}:`, err);
     throw err;

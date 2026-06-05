@@ -13,13 +13,11 @@ import {
   deleteStack,
 } from "./megaStackStorage.js";
 
-// Minimal valid 1×1 JPEG in base64 (no data-URL prefix).
-const TINY_JPEG =
-  "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDB" +
-  "kSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAAR" +
-  "CAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAA" +
-  "AAAAAAAAAAAAAP/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAA" +
-  "AAAAAAAP/aAAwDAQACEQMRAD8AJQAB/9k=";
+// 1×1 transparent GIF as a data URL — universally valid base64 (56 chars,
+// length is a multiple of 4), simulates the data-URL format that the real
+// camera produces.  saveStack will strip the prefix before writing.
+const TINY_IMG =
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
 async function runTest() {
   console.log("=== [MegaStack Test] START ===");
@@ -28,7 +26,7 @@ async function runTest() {
     // ── 1. Save ───────────────────────────────────────────────────────
     console.log("[MegaStack Test] 1/5 — saving fake 3-page stack…");
     const id = await saveStack(
-      [TINY_JPEG, TINY_JPEG, TINY_JPEG],
+      [TINY_IMG, TINY_IMG, TINY_IMG],
       ["Page one text.", "Page two text.", "Page three text."]
     );
     console.log("[MegaStack Test] saved id:", id);
