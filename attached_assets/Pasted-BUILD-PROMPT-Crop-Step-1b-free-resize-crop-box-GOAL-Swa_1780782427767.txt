@@ -1,0 +1,62 @@
+BUILD PROMPT — Crop Step 1b: free-resize crop box
+
+GOAL
+Swap the Quick Stack crop UI from react-easy-crop (fixed 3:4 box, move +
+zoom only) to a free-resize cropper where the user can drag handles to ANY
+shape/size — small box for a textbook paragraph/diagram, or a large box just
+inside the margins to trim edges/header off a novel page. Everything else
+about the crop flow stays exactly as it is.
+
+KEEP A CLEAN FALLBACK
+- Do NOT delete the existing react-easy-crop CropScreen. Rename the current
+  file (e.g. CropScreen.easycrop.jsx) so we can switch back in one line if
+  the new one misbehaves on device. Leave react-easy-crop installed for now.
+
+SCOPE — do ONLY this
+- Quick Stack path ONLY. Mega Stack, PDF reader, and the reader stay untouched.
+- Replace the cropper component inside CropScreen with react-advanced-cropper.
+- Free-form selection: user can resize the crop box to any rectangle and move
+  it. No locked aspect ratio.
+- Keep the existing buttons/behaviour: "Use crop" and "Whole page".
+- ADD a "Reset / whole page" action that snaps the crop box back to the full
+  image, so trimming a novel page starts from the whole page (not a tiny box).
+- Keep the crop ON/OFF toggle on the capture screen exactly as it is now
+  (default ON, remembered in localStorage).
+
+CRITICAL — DO NOT CHANGE THE PIXEL CROP
+- cropCanvas.js / getCroppedImg MUST stay exactly as-is. It already crops from
+  the FULL-RES image correctly and protects OCR quality. Do not touch it.
+- The ONLY new work is mapping react-advanced-cropper's output to the
+  arguments getCroppedImg expects. react-advanced-cropper exposes
+  cropper.getCoordinates() (left, top, width, height in REAL image pixels).
+  Map those to the pixelCrop object getCroppedImg already uses. This mapping
+  is the one place a bug could quietly wreck OCR — get it exactly right and
+  verify on device.
+- If the new cropper's coordinates ever come back scaled to the display size
+  instead of real pixels, that's the bug — fix the mapping, do not scale the
+  image down before cropping.
+
+DEPENDENCY
+- react-advanced-cropper was added, so deps changed: pnpm install on the PC
+  after pull (pnpm, NOT npm — project uses pnpm catalogs). Import its stylesheet.
+
+PROJECT RULES (my proven flow)
+- Build: npm run build
+- BEFORE commit: git status --short and confirm a NEW dist js hash.
+- Commit, then: git push origin build
+- PC (Git Bash): git pull origin build -> pnpm install (deps changed this time)
+  -> npx cap sync android
+- Android Studio: uninstall -> Run -> chrome://inspect to confirm hash changed.
+- Test on the phone, NOT the Replit preview.
+
+ACCEPTANCE TEST (on device)
+1. Textbook: Quick Stack -> photo -> drag a SMALL box around one paragraph ->
+   Use crop -> OCR text is clean and ONLY that paragraph.
+2. Novel: photo -> drag a LARGE box just inside the margins (trim header, page
+   number, edges) -> Use crop -> OCR text excludes the trimmed furniture.
+3. Reset button snaps the box back to the full image.
+4. Whole page still works. Toggle OFF still goes straight to OCR.
+5. Mega Stack and PDF reader unchanged.
+
+STOP after this. Report: does free-resize crop give clean OCR on BOTH a
+textbook paragraph and a trimmed novel page?
