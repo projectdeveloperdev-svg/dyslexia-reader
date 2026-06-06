@@ -234,6 +234,44 @@ body.camera-open #root {
   text-align: center;
 }
 
+/* ── Crop toggle — Quick Stack only ──────────────────────────────────────── */
+.camera-crop-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-end;
+  margin: 0 1rem 0.45rem;
+  padding: 0.3rem 0.7rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.camera-crop-toggle--on {
+  background: rgba(195, 178, 232, 0.3);
+  border-color: rgba(195, 178, 232, 0.5);
+  color: #e0d5f5;
+}
+
+.camera-crop-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.camera-crop-toggle--on .camera-crop-dot {
+  background: #C3B2E8;
+}
+
 /* ── Counter pill (stack mode — top of screen) ───────────────────────────── */
 .camera-counter-pill {
   position: absolute;

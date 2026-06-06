@@ -1,0 +1,52 @@
+BUILD PROMPT — Crop on scan (Step 1: prove OCR works on a cropped region)
+
+GOAL
+Add a crop step to the Quick Stack capture flow so the user can crop to the
+part of the page they want, then OCR only that region. This is a proof-of-
+concept: confirm on a real phone that cropping a paragraph from a textbook
+page gives clean OCR text. Keep it minimal.
+
+SCOPE — do ONLY this
+- Quick Stack capture path ONLY. Do NOT touch Mega Stack, the PDF reader, or
+  the reader components.
+- After a photo is captured and BEFORE OCR runs, show a crop screen: a
+  draggable/resizable box over the captured image.
+- User adjusts box -> taps "Use" -> crop -> run the EXISTING OCR function on
+  the cropped image -> continue into the normal Quick Stack flow.
+- Add a crop toggle on the capture screen: ON (default) = show crop step,
+  OFF = straight to OCR (current whole-page behaviour). Remember the last
+  choice in localStorage.
+
+CRITICAL REQUIREMENTS
+1. Crop from the FULL-RESOLUTION captured image, not a downscaled preview. If
+   the crop UI shows a scaled image, map the box back to the original full-res
+   pixels and crop from the original. This determines OCR quality — get it right.
+2. Reuse the EXISTING OCR function. Do not add a second OCR path. Find where
+   OCR is called after capture and feed it the cropped image instead.
+3. Don't break anything. Quick Stack, Mega Stack, PDF reader, and the reader
+   must behave exactly as before. Gate the crop step to the Quick Stack path only.
+4. No silent failures: if cropping fails, show a clear message and fall back to
+   whole-page OCR.
+
+SUGGESTED APPROACH
+- Use a reliable React image cropper (e.g. react-easy-crop) over the captured
+  image. On confirm, draw the selected region to a canvas at full-res and export
+  in the format the OCR function expects (dataURL/blob).
+- Keep UI dead simple: image + crop box + "Use" and "Whole page" buttons, plus
+  the ON/OFF toggle on the capture screen. No filters, rotation, or multi-crop.
+
+PROJECT RULES
+- pnpm install, NOT npm.
+- After building: rebuild dist, commit, and confirm the on-device index-XXXX.js
+  hash has CHANGED before testing.
+- Test on the phone, not the Replit preview.
+
+ACCEPTANCE TEST (on device)
+- Quick Stack -> photograph a textbook page -> crop to one paragraph -> OCR text
+  is clean and contains only that paragraph (no headers, page numbers, next
+  column).
+- Compare to whole-page OCR of the same page — cropped should be cleaner.
+- Toggle OFF -> capture goes straight to OCR, whole page, as before.
+- Mega Stack and PDF reader unchanged.
+
+STOP after this. Report: did cropped OCR come out clean on a real textbook page?

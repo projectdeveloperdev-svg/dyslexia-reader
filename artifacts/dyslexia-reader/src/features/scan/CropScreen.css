@@ -1,0 +1,83 @@
+/* ── Crop screen — full-screen overlay over the camera portal ────────────── */
+.crop-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 15; /* above discard dialog (z-index:10) and thumbnails */
+  background: #000;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Cropper container — takes all available vertical space ──────────────── */
+.crop-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  /* react-easy-crop needs explicit height on its container */
+}
+
+/* ── Hint text ───────────────────────────────────────────────────────────── */
+.crop-hint {
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+  padding: 0.4rem 1rem 0.2rem;
+}
+
+/* ── Error banner ────────────────────────────────────────────────────────── */
+.crop-error {
+  margin: 0;
+  padding: 0.45rem 1rem;
+  background: rgba(180, 0, 0, 0.75);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* ── Action buttons ──────────────────────────────────────────────────────── */
+.crop-controls {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem env(safe-area-inset-bottom, 1rem);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.crop-btn {
+  flex: 1;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.crop-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.crop-btn--whole {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.crop-btn--whole:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.crop-btn--use {
+  background: linear-gradient(180deg, #C3B2E8 0%, #B29BDF 100%);
+  color: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(180, 160, 220, 0.5);
+}
+
+.crop-btn--use:active:not(:disabled) {
+  opacity: 0.85;
+  transform: translateY(1px);
+}

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { CameraPreview } from "@capacitor-community/camera-preview";
 import { normaliseCapture } from "./normaliseCapture";
 import { runOCR } from "../ocr/runOCR";
+import CropScreen from "./CropScreen";
 import {
   addSnippet,
   clearSnippets,
@@ -15,6 +16,7 @@ import "./CameraView.css";
 
 const STACK_CAP = 5;
 const PREVIEW_ID = "camera-preview-container";
+const CROP_STORAGE_KEY = "dexy-crop-enabled";
 
 export default function CameraView({
   // scan mode props
@@ -46,6 +48,15 @@ export default function CameraView({
   const [showCapLimit, setShowCapLimit] = useState(false);
   const [capLimitSeen, setCapLimitSeen] = useState(false);
   const [showMegaStack, setShowMegaStack] = useState(false);
+
+  // ── Crop (Quick Stack only) ───────────────────────────────────────────
+  // pendingCrop: set after shutter fires when crop is ON.
+  // Stays set (busy=true) until user resolves the crop screen.
+  const [pendingCrop, setPendingCrop] = useState(null); // null | { dataUrl, capturedRetakeIndex }
+  const [cropEnabled, setCropEnabled] = useState(() => {
+    const stored = localStorage.getItem(CROP_STORAGE_KEY);
+    return stored === null ? true : stored === "1";
+  });
 
   // Auto-open camera on mount for both stack modes.
   useEffect(() => {
@@ -119,6 +130,26 @@ export default function CameraView({
     }
   }
 
+  // ── Quick Stack: store a finalised snippet ────────────────────────────
+  // Called after OCR completes (crop or full-page).
+  // `capturedRetakeIndex` is the retakeIndex value at shutter time.
+
+  function storeStackSnippet(dataUrl, ocrText, capturedRetakeIndex) {
+    if (capturedRetakeIndex !== null) {
+      replaceSnippet(capturedRetakeIndex, dataUrl, ocrText);
+      setThumbnails((prev) => {
+        const next = [...prev];
+        next[capturedRetakeIndex] = dataUrl;
+        return next;
+      });
+      setRetakeIndex(null);
+    } else {
+      addSnippet(dataUrl, ocrText);
+      setThumbnails((prev) => [...prev, dataUrl]);
+      setStackCount((c) => c + 1);
+    }
+  }
+
   // ── Stack / Mega Stack shutter ────────────────────────────────────────
 
   async function handleStackShutter() {
@@ -149,6 +180,15 @@ export default function CameraView({
 
     try {
       const dataUrl = await normaliseCapture(base64);
+
+      // ── Quick Stack with crop ON: pause here, show crop screen ────────
+      // busy stays true until the user resolves the crop screen.
+      if (mode === "stack" && cropEnabled) {
+        setPendingCrop({ dataUrl, capturedRetakeIndex: retakeIndex });
+        return;
+      }
+
+      // ── Crop OFF or Mega Stack: run OCR immediately ───────────────────
       const ocrText = await runOCR(dataUrl);
 
       if (mode === "megastack") {
@@ -173,26 +213,48 @@ export default function CameraView({
           setStackCount((c) => c + 1);
         }
       } else {
-        // Quick Stack: store in stackStore immediately.
-        if (isRetaking) {
-          replaceSnippet(retakeIndex, dataUrl, ocrText);
-          setThumbnails((prev) => {
-            const next = [...prev];
-            next[retakeIndex] = dataUrl;
-            return next;
-          });
-          setRetakeIndex(null);
-        } else {
-          addSnippet(dataUrl, ocrText);
-          setThumbnails((prev) => [...prev, dataUrl]);
-          setStackCount((c) => c + 1);
-        }
+        // Quick Stack, crop OFF — store directly.
+        storeStackSnippet(dataUrl, ocrText, retakeIndex);
       }
     } catch (e) {
       console.error("[CameraView] stack OCR failed:", e);
     }
 
     setBusy(false);
+  }
+
+  // ── Crop screen resolution handlers (Quick Stack only) ────────────────
+
+  async function handleCropConfirm(croppedDataUrl) {
+    const { capturedRetakeIndex } = pendingCrop;
+    setPendingCrop(null);
+    try {
+      const ocrText = await runOCR(croppedDataUrl);
+      storeStackSnippet(croppedDataUrl, ocrText, capturedRetakeIndex);
+    } catch (e) {
+      console.error("[CameraView] crop OCR failed:", e);
+    }
+    setBusy(false);
+  }
+
+  async function handleCropWholePage() {
+    const { dataUrl, capturedRetakeIndex } = pendingCrop;
+    setPendingCrop(null);
+    try {
+      const ocrText = await runOCR(dataUrl);
+      storeStackSnippet(dataUrl, ocrText, capturedRetakeIndex);
+    } catch (e) {
+      console.error("[CameraView] whole page OCR failed:", e);
+    }
+    setBusy(false);
+  }
+
+  function toggleCrop() {
+    setCropEnabled((prev) => {
+      const next = !prev;
+      localStorage.setItem(CROP_STORAGE_KEY, next ? "1" : "0");
+      return next;
+    });
   }
 
   // ── Cancel / discard ──────────────────────────────────────────────────
@@ -320,6 +382,15 @@ export default function CameraView({
 
   return createPortal(
     <div id={PREVIEW_ID} className="camera-overlay">
+      {/* Crop screen — Quick Stack, crop ON, after shutter fires */}
+      {pendingCrop && (
+        <CropScreen
+          imageUrl={pendingCrop.dataUrl}
+          onConfirm={handleCropConfirm}
+          onWholePage={handleCropWholePage}
+        />
+      )}
+
       {/* Counter pill */}
       {(mode === "stack" || mode === "megastack") && (
         <div
@@ -375,6 +446,18 @@ export default function CameraView({
           <p className="camera-save-error" role="alert">
             {megaSaveError}
           </p>
+        )}
+
+        {/* Crop toggle — Quick Stack only */}
+        {isQuickStack && (
+          <button
+            className={`camera-crop-toggle${cropEnabled ? " camera-crop-toggle--on" : ""}`}
+            onClick={toggleCrop}
+            aria-pressed={cropEnabled}
+          >
+            <span className="camera-crop-dot" aria-hidden="true" />
+            Crop {cropEnabled ? "ON" : "OFF"}
+          </button>
         )}
 
         {/* Control bar */}
