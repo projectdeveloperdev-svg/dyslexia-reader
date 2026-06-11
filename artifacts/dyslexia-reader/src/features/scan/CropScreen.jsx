@@ -26,13 +26,38 @@ export default function CropScreen({ imageUrl, onConfirm, onWholePage }) {
   const [busy, setBusy] = useState(false);
   const [cropError, setCropError] = useState(null);
 
-  // Start the crop box covering the full image so "trimming" is the natural action.
+  // Initial box is inset ~9% on each side so corner handles sit away from the
+  // screen edges and are easy to grab with a thumb.
+  // NOTE: reset() would go back to these inset defaults, so we do NOT use it
+  // in handleReset — see below.
   function defaultSize({ imageSize }) {
-    return { width: imageSize.width, height: imageSize.height };
+    return {
+      width: Math.round(imageSize.width * 0.82),
+      height: Math.round(imageSize.height * 0.82),
+    };
   }
 
+  function defaultPosition({ imageSize }) {
+    return {
+      left: Math.round(imageSize.width * 0.09),
+      top: Math.round(imageSize.height * 0.09),
+    };
+  }
+
+  // Reset to FULL IMAGE (not back to the inset default).
+  // setCoordinates with 0,0 + full image dims achieves this without remounting.
   function handleReset() {
-    cropperRef.current?.reset();
+    const cropper = cropperRef.current;
+    if (!cropper) return;
+    const state = cropper.getState();
+    if (state?.image) {
+      cropper.setCoordinates({
+        left: 0,
+        top: 0,
+        width: state.image.width,
+        height: state.image.height,
+      });
+    }
   }
 
   async function handleUse() {
@@ -73,6 +98,7 @@ export default function CropScreen({ imageUrl, onConfirm, onWholePage }) {
           ref={cropperRef}
           src={imageUrl}
           defaultSize={defaultSize}
+          defaultPosition={defaultPosition}
           className="crop-advanced"
         />
       </div>

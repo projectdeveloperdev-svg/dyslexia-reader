@@ -1,0 +1,44 @@
+BUILD PROMPT — Crop Step 1c: make crop handles easy to grab
+
+GOAL
+The free-resize crop box works well, but the resize handles sit right on the
+image edges and are hard to grab on a phone. Fix ONLY the grab-ability. Do not
+change cropping behaviour, OCR, or anything else.
+
+SCOPE — do ONLY this
+- Quick Stack crop UI (CropScreen.jsx, react-advanced-cropper) ONLY.
+- Two changes:
+  1. INSET STARTING BOX: when the crop screen opens, start the box slightly
+     inset from the image edges (e.g. ~8-10% in on each side) instead of
+     covering the full image flush to the borders. This pulls the handles
+     inward where they're grabbable. (Reset / Whole page should still snap to
+     the FULL image — only the initial default is inset.)
+  2. BIGGER TOUCH TARGETS: increase the touchable/grab area of the resize
+     handles so they're easy to catch with a thumb, even though the visible
+     handle stays a sensible size. Use the library's handler styling / a
+     larger transparent hit area around each handle.
+
+DO NOT CHANGE
+- cropCanvas.js / getCroppedImg — untouched.
+- The pixel-coordinate mapping (getCoordinates -> pixelCrop) — untouched.
+- Crop ON/OFF toggle, Reset, Whole page, "Use crop" — all stay as-is.
+- Mega Stack, PDF reader, reader — untouched.
+- The easycrop fallback file — leave it.
+
+PROJECT RULES (my proven flow)
+- Build: npm run build
+- BEFORE commit: git status --short, confirm a NEW dist js hash.
+- git commit, then git push origin build
+- PC: git pull origin build -> npx cap sync android  (no pnpm install — no
+  deps changed this time)
+- Android Studio: uninstall -> Run -> chrome://inspect, confirm new hash.
+
+ACCEPTANCE TEST (on device)
+- Crop screen opens with the box slightly inset; handles are easy to grab.
+- Can still drag handles out to the edges if needed.
+- Reset / Whole page snap to the FULL image.
+- Crop still produces clean OCR of the selected region (mapping unchanged).
+- Toggle OFF still skips crop. Mega Stack unchanged.
+
+STOP after this. Report: are the handles easy to grab now, and does crop still
+read clean?

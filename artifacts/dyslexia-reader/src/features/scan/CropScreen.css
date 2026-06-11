@@ -22,6 +22,31 @@
   height: 100%;
 }
 
+/* ── react-advanced-cropper handle overrides ─────────────────────────────── */
+/*
+ * The library renders each corner handle as:
+ *   .advanced-cropper-handler-wrapper   (30×30px, centered on corner via translate -50%/-50%)
+ *     └── .__draggable (100%×100%)
+ *           └── .advanced-cropper-simple-handler (10×10px visible dot)
+ *
+ * Strategy: widen the wrapper to 52px (≥44px Apple HIG minimum touch target)
+ * and enlarge the visible dot to 18px so it's easy to see AND grab.
+ * The -50%/-50% transform on the wrapper already keeps it perfectly centred
+ * on the corner point, so nothing else needs to move.
+ */
+.advanced-cropper-handler-wrapper {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.advanced-cropper-simple-handler {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 4px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55) !important;
+}
+
 /* ── Hint text ───────────────────────────────────────────────────────────── */
 .crop-hint {
   text-align: center;
