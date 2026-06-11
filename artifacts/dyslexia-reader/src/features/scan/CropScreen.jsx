@@ -45,17 +45,20 @@ export default function CropScreen({ imageUrl, onConfirm, onWholePage }) {
   }
 
   // Reset to FULL IMAGE (not back to the inset default).
-  // setCoordinates with 0,0 + full image dims achieves this without remounting.
+  // CropperState shape: { boundary, imageSize, transforms, visibleArea, coordinates }
+  // state.imageSize = { width, height } in real image pixels — the correct field.
+  // state.image does NOT exist on CropperState (that was the bug: guard was always false).
   function handleReset() {
     const cropper = cropperRef.current;
     if (!cropper) return;
     const state = cropper.getState();
-    if (state?.image) {
+    console.log("[CropScreen] handleReset — imageSize:", state?.imageSize);
+    if (state?.imageSize?.width > 0 && state?.imageSize?.height > 0) {
       cropper.setCoordinates({
         left: 0,
         top: 0,
-        width: state.image.width,
-        height: state.image.height,
+        width: state.imageSize.width,
+        height: state.imageSize.height,
       });
     }
   }
