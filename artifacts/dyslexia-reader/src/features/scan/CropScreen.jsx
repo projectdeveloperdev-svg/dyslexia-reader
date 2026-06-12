@@ -147,14 +147,14 @@ export default function CropScreen({ imageUrl, onConfirm }) {
           onClick={handleReset}
           disabled={busy}
         >
-          Reset
+          Full crop
         </button>
         <button
           className="crop-btn crop-btn--whole"
           onClick={handleWholePage}
           disabled={busy}
         >
-          {busy ? "Processing…" : "Whole page"}
+          {busy ? "Processing…" : "Use whole photo"}
         </button>
         <button
           className="crop-btn crop-btn--use"
