@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { CameraPreview } from "@capacitor-community/camera-preview";
 import { normaliseCapture } from "./normaliseCapture";
 import { runOCR } from "../ocr/runOCR";
+import { upscaleForOCR } from "./upscaleForOCR";
 import CropScreen from "./CropScreen";
 import {
   addSnippet,
@@ -229,7 +230,8 @@ export default function CameraView({
     const { capturedRetakeIndex } = pendingCrop;
     setPendingCrop(null);
     try {
-      const ocrText = await runOCR(croppedDataUrl);
+      const upscaled = await upscaleForOCR(croppedDataUrl);
+      const ocrText = await runOCR(upscaled);
       storeStackSnippet(croppedDataUrl, ocrText, capturedRetakeIndex);
     } catch (e) {
       console.error("[CameraView] crop OCR failed:", e);

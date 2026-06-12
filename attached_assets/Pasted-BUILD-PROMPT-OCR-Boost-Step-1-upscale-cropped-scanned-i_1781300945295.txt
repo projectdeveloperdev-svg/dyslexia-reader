@@ -1,0 +1,49 @@
+BUILD PROMPT — OCR Boost Step 1: upscale cropped/scanned image before OCR
+
+GOAL
+Improve OCR on small/thin text by upscaling the image into Tesseract's sweet
+spot BEFORE OCR runs. This is Step 1 of the OCR Boost spec — upscale ONLY, no
+sharpen/contrast/threshold yet. Prove upscaling alone improves small text
+without harming full pages.
+
+SCOPE — do ONLY this
+- Add a preprocessing step in the scan/OCR path, BETWEEN getting the image and
+  calling the EXISTING OCR function. Applies to BOTH the cropped image and the
+  whole-photo path (Quick Stack).
+- Upscale SIZED TO THE TEXT, not a fixed multiplier:
+  * Aim the image's SHORT side at roughly 1500-2000px.
+  * If the image is already at/above that, do NOT upscale (leave as-is).
+  * Cap the scale factor (e.g. max 3x) so a tiny crop isn't blown up absurdly.
+  * Never produce an image larger than ~4000px on the long side (memory guard).
+- Use canvas 2D drawImage to a larger canvas. Keep aspect ratio. Export in the
+  same format the OCR function already expects (dataUrl/blob).
+
+DO NOT TOUCH
+- The OCR function itself, the getCoordinates -> pixelCrop mapping, getCroppedImg
+  beyond reusing its output, the crop UI/buttons, the crop ON/OFF toggle, Mega
+  Stack, PDF reader, reader, easycrop fallback.
+- No sharpen, contrast, threshold, or thickening yet — that's later steps.
+
+NO NEW DEPENDENCY
+- Canvas 2D only. No new libraries.
+
+PERFORMANCE / SAFETY
+- The upscale + OCR runs once per capture. Keep it on the existing flow; show
+  the existing "Processing…" state while it runs.
+- No silent failures: if upscaling fails, fall back to OCR on the original
+  image (don't block the scan).
+
+PROJECT RULES (proven flow)
+- Build from the APP folder: cd ~/workspace/artifacts/dyslexia-reader, then
+  npm run build  (NOT from workspace root).
+- git add -A, then git status --short to confirm a NEW dist hash before commit.
+- git commit, git push origin build.
+- PC: git pull origin build -> npx cap sync android  (no pnpm install — no deps).
+
+ACCEPTANCE TEST (on device, before/after)
+- CD spine / small thin text: OCR has FEWER errors than before.
+- Textbook page: same or better, NOT worse.
+- Full clean page: no meaningful slowdown, no memory issue on a long Mega Stack.
+
+STOP after this. Report: what upscale logic was added, and did small-text OCR
+improve on a real image?
