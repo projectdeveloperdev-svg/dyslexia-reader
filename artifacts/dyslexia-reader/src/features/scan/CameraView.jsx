@@ -237,17 +237,6 @@ export default function CameraView({
     setBusy(false);
   }
 
-  async function handleCropWholePage() {
-    const { dataUrl, capturedRetakeIndex } = pendingCrop;
-    setPendingCrop(null);
-    try {
-      const ocrText = await runOCR(dataUrl);
-      storeStackSnippet(dataUrl, ocrText, capturedRetakeIndex);
-    } catch (e) {
-      console.error("[CameraView] whole page OCR failed:", e);
-    }
-    setBusy(false);
-  }
 
   function toggleCrop() {
     setCropEnabled((prev) => {
@@ -387,7 +376,6 @@ export default function CameraView({
         <CropScreen
           imageUrl={pendingCrop.dataUrl}
           onConfirm={handleCropConfirm}
-          onWholePage={handleCropWholePage}
         />
       )}
 

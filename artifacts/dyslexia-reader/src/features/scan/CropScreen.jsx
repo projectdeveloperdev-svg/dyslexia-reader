@@ -7,10 +7,15 @@ import "./CropScreen.css";
 /**
  * Full-screen free-resize crop overlay rendered inside the camera portal.
  *
- * Props (unchanged from easycrop version — CameraView.jsx needs no edits):
- *  imageUrl   — full-resolution data URL from normaliseCapture
- *  onConfirm(croppedDataUrl) — user accepted a crop
- *  onWholePage()             — user skipped crop; caller uses the full image
+ * Props:
+ *  imageUrl              — full-resolution data URL from normaliseCapture
+ *  onConfirm(dataUrl)    — called with either a cropped region OR the full
+ *                          image. Both "Use crop" and "Whole page" go through
+ *                          this single path so the crop screen stays mounted
+ *                          (busy=true) until the caller dismisses it via
+ *                          setPendingCrop(null). This prevents the native
+ *                          Capacitor camera layer from receiving touch events
+ *                          while OCR is running.
  *
  * Coordinates:
  *  react-advanced-cropper.getCoordinates() returns { left, top, width, height }
@@ -21,7 +26,7 @@ import "./CropScreen.css";
  *  The previous react-easy-crop version is preserved as CropScreen.easycrop.jsx.
  *  To switch back, swap the import in CameraView.jsx.
  */
-export default function CropScreen({ imageUrl, onConfirm, onWholePage }) {
+export default function CropScreen({ imageUrl, onConfirm }) {
   const cropperRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [cropError, setCropError] = useState(null);
@@ -60,6 +65,25 @@ export default function CropScreen({ imageUrl, onConfirm, onWholePage }) {
         width: state.imageSize.width,
         height: state.imageSize.height,
       });
+    }
+  }
+
+  // "Whole page" — same path as "Use crop", just skipping getCroppedImg.
+  // Passing imageUrl (full image) through onConfirm keeps the crop screen
+  // mounted (busy=true) while the caller runs OCR, so the native camera
+  // layer is never exposed to stray touch events mid-processing.
+  async function handleWholePage() {
+    if (busy) return;
+    setBusy(true);
+    setCropError(null);
+    try {
+      onConfirm(imageUrl);
+      // Caller (handleCropConfirm) calls setPendingCrop(null) which unmounts
+      // this component — no need to reset busy on success.
+    } catch (err) {
+      console.error("[CropScreen] whole page failed:", err);
+      setCropError("Failed — try again.");
+      setBusy(false);
     }
   }
 
@@ -127,10 +151,10 @@ export default function CropScreen({ imageUrl, onConfirm, onWholePage }) {
         </button>
         <button
           className="crop-btn crop-btn--whole"
-          onClick={onWholePage}
+          onClick={handleWholePage}
           disabled={busy}
         >
-          Whole page
+          {busy ? "Processing…" : "Whole page"}
         </button>
         <button
           className="crop-btn crop-btn--use"
