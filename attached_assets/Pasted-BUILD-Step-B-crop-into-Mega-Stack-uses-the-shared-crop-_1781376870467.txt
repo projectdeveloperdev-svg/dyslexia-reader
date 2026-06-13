@@ -1,0 +1,53 @@
+BUILD — Step B: crop into Mega Stack (uses the shared crop toggle)
+
+From the diagnostic: Quick Stack crop works via handleStackShutter →
+setPendingCrop → CropScreen → handleCropConfirm. Mega Stack currently skips
+crop. Add crop to Mega Stack using the SAME CropScreen, the SAME pendingCrop
+flow, and the SAME shared cropEnabled toggle. Three surgical changes in
+CameraView.jsx.
+
+CHANGES (CameraView.jsx only)
+1. WIDEN THE CROP GATE in handleStackShutter:
+   the crop check `mode === "stack" && cropEnabled`
+   becomes `(mode === "stack" || mode === "megastack") && cropEnabled`
+   so Mega Stack captures also route into the crop screen when crop is ON.
+
+2. ADD A MEGA STACK BRANCH in handleCropConfirm:
+   Currently handleCropConfirm always calls storeStackSnippet (Quick Stack).
+   Add a `mode === "megastack"` branch that, after upscaleForOCR + runOCR on the
+   cropped image, updates the Mega Stack LOCAL STATE exactly the way the
+   non-crop Mega Stack path does (the setThumbnails / setMegaOcrTexts updates) —
+   NOT storeStackSnippet. Mirror the existing Mega Stack capture's local-state
+   logic, just with the cropped+boosted image instead of the raw dataUrl.
+
+3. SHOW THE CROP TOGGLE in Mega Stack:
+   The crop toggle button is currently rendered only for Quick Stack
+   (isQuickStack guard). Widen it so it also shows in megastack mode, so a user
+   mid-Mega-Stack can turn crop ON/OFF. Same button, same cropEnabled state, same
+   localStorage key — do NOT create a second toggle or second state.
+
+⚠️ RETAKE PATH — TEST THIS (moderate risk flagged in diagnostic)
+pendingCrop carries capturedRetakeIndex. The Mega Stack crop branch must use it
+the same way the Mega Stack local-state update does for retakes — i.e. REPLACE
+the page at capturedRetakeIndex if it's a retake, otherwise APPEND. Make sure a
+cropped retake replaces the right page, not appends a duplicate.
+
+DO NOT TOUCH
+- Quick Stack's handleCropConfirm branch (storeStackSnippet) — unchanged.
+- upscaleForOCR, runOCR, readingOrder, cleanText, CropScreen, the crop toggle
+  STATE/key, stackStore, Mega Stack save/library/resume (megaStackStorage,
+  commitMegaStack, onMegaDone), PDF, reader.
+- CameraView.jsx only.
+
+ACCEPTANCE TEST (on device)
+- Crop ON + Mega Stack: each captured page shows the crop screen; Use crop /
+  Use whole photo / Full crop all work; cropped page lands in the stack; OCR is
+  of the cropped region.
+- Crop OFF + Mega Stack: captures straight through, no crop screen (current
+  behaviour).
+- The crop toggle button is visible and works in Mega Stack mode.
+- RETAKE a page with crop ON → it REPLACES that page, not appends a duplicate.
+- Save the stack → reopen from library → pages correct and in order.
+- Quick Stack unchanged.
+
+STOP after this. Report the three changes and confirm the retake-replace works.

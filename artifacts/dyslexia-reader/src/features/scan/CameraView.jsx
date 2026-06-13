@@ -182,9 +182,9 @@ export default function CameraView({
     try {
       const dataUrl = await normaliseCapture(base64);
 
-      // ── Quick Stack with crop ON: pause here, show crop screen ────────
+      // ── Quick Stack OR Mega Stack with crop ON: show crop screen ──────
       // busy stays true until the user resolves the crop screen.
-      if (mode === "stack" && cropEnabled) {
+      if ((mode === "stack" || mode === "megastack") && cropEnabled) {
         setPendingCrop({ dataUrl, capturedRetakeIndex: retakeIndex });
         return;
       }
@@ -234,7 +234,31 @@ export default function CameraView({
     try {
       const upscaled = await upscaleForOCR(croppedDataUrl);
       const ocrText = await runOCR(upscaled);
-      storeStackSnippet(croppedDataUrl, ocrText, capturedRetakeIndex);
+
+      if (mode === "megastack") {
+        // Mega Stack: update local state only (same as non-crop path).
+        // capturedRetakeIndex !== null → replace that page; null → append.
+        if (capturedRetakeIndex !== null) {
+          setThumbnails((prev) => {
+            const next = [...prev];
+            next[capturedRetakeIndex] = croppedDataUrl;
+            return next;
+          });
+          setMegaOcrTexts((prev) => {
+            const next = [...prev];
+            next[capturedRetakeIndex] = ocrText;
+            return next;
+          });
+          setRetakeIndex(null);
+        } else {
+          setThumbnails((prev) => [...prev, croppedDataUrl]);
+          setMegaOcrTexts((prev) => [...prev, ocrText]);
+          setStackCount((c) => c + 1);
+        }
+      } else {
+        // Quick Stack: commit to stackStore immediately.
+        storeStackSnippet(croppedDataUrl, ocrText, capturedRetakeIndex);
+      }
     } catch (e) {
       console.error("[CameraView] crop OCR failed:", e);
     }
@@ -440,8 +464,8 @@ export default function CameraView({
           </p>
         )}
 
-        {/* Crop toggle — Quick Stack only */}
-        {isQuickStack && (
+        {/* Crop toggle — Quick Stack and Mega Stack (shared toggle, same key) */}
+        {(isQuickStack || mode === "megastack") && (
           <button
             className={`camera-crop-toggle${cropEnabled ? " camera-crop-toggle--on" : ""}`}
             onClick={toggleCrop}
