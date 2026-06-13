@@ -190,7 +190,9 @@ export default function CameraView({
       }
 
       // ── Crop OFF or Mega Stack: run OCR immediately ───────────────────
-      const ocrText = await runOCR(dataUrl);
+      // Step A: boost before OCR (passthrough on full pages ≥ 900px short side).
+      const boosted = await upscaleForOCR(dataUrl);
+      const ocrText = await runOCR(boosted);
 
       if (mode === "megastack") {
         // Mega Stack: keep images + ocrTexts in local state only.
