@@ -1,0 +1,47 @@
+FIX (diagnose then implement) — Upscale/clean is HARMING full-page crop scans
+
+⚠️ PROTECT WHAT WORKS — READ FIRST
+The NORMAL scan path (menu single scan) reads cleanly and MUST NOT CHANGE in
+any way. It does NOT run upscaleForOCR. Do not touch it, its call site, or
+anything it depends on. The ONLY file you may modify is upscaleForOCR.js.
+If a change would affect the normal scan path, do NOT make it.
+
+EVIDENCE
+Same novel page, two scans:
+- CROP "whole page" path (runs upscaleForOCR): image already 1080×1920,
+  upscaled ×1.48 to 1600×2844, then grayscale+contrast+sharpen+Otsu threshold.
+  Result: badly garbled ("In fact" -> "t . n fet").
+- NORMAL scan (no upscaleForOCR): same page, read cleanly. ← THIS IS THE GOOD
+  ONE. DO NOT CHANGE IT.
+Reading order was correct in both. The difference is the upscale+clean step
+degrading an already-good full-page image.
+
+GOAL
+Make the boost help SMALL crops without HARMING already-large images (full
+pages). Fix is INSIDE upscaleForOCR.js only.
+
+IMPLEMENT (upscaleForOCR.js ONLY)
+- If the incoming image is already large enough (short side >= ~1000-1200px,
+  i.e. little/no upscale needed): SKIP the heavy clean (threshold/sharpen/
+  contrast) and return the image at/near original. Aggressive clean should
+  apply ONLY when a SMALL region was significantly upscaled.
+- Tie clean strength to upscale amount: big upscale (small crop) -> full clean;
+  little/no upscale (full page) -> skip/minimal clean.
+- Keep the fallback chain and logging; log whether clean was APPLIED or SKIPPED.
+
+STRICT — DO NOT TOUCH
+- The normal/single scan path (handleShutter) — it does not call upscaleForOCR
+  and must remain byte-for-byte unaffected.
+- runOCR, readingOrder, cleanText, CameraView call sites, crop logic, Mega
+  Stack, PDF reader, reader, easycrop fallback.
+- ONLY upscaleForOCR.js may change. The function signature and how it's called
+  must stay identical so every existing caller behaves the same.
+
+ACCEPTANCE TEST (on device, same page)
+- Crop "whole page" of the novel page now reads AS WELL AS normal scan.
+- Normal menu scan UNCHANGED (re-test it — must be identical to before).
+- A SMALL crop of tiny text still gets the full boost and reads well.
+- Log shows clean SKIPPED for the full page, APPLIED for the small crop.
+
+STOP after this. Report the threshold used, confirm the normal-scan path was
+NOT touched, and give before/after on a full page and a small crop.

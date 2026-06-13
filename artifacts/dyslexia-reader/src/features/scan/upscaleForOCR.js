@@ -5,15 +5,14 @@
  *   Brings the image's short side up to TARGET_SHORT px so ML Kit has enough
  *   pixel data to resolve thin strokes. No-ops if the image is already large.
  *
- * Phase 2 — Clean (runs on the upscaled canvas, in order)
- *   1. Grayscale          — luminance-weighted; removes colour confusion.
- *   2. Contrast boost     — linear stretch around midpoint; widens text/bg gap.
- *   3. Unsharp mask       — box-blur difference; sharpens edges without noise.
- *   4. Otsu threshold     — binarises; THRESHOLD_BIAS shifts toward dark so
- *                           hairline strokes survive rather than disappear.
+ * Phase 2 — Clean (grayscale → contrast → sharpen → Otsu threshold)
+ *   Only applied when the image needed SIGNIFICANT upscaling (scale ≥
+ *   CLEAN_MIN_SCALE). Full-page captures are already large enough that the
+ *   heavy clean degrades rather than helps them — they get upscale only (or
+ *   no processing at all) and are returned as-is for ML Kit.
  *
  * Fallback chain (no scan ever breaks):
- *   clean fails  → upscaled-only image
+ *   clean fails   → upscaled-only image
  *   upscale fails → original dataUrl
  *
  * @param {string} dataUrl  image/jpeg or image/png data URL
@@ -24,6 +23,11 @@
 const TARGET_SHORT    = 1600; // target short side (px) for upscale step
 const MAX_SCALE       = 3;    // cap: never upscale more than this multiplier
 const MAX_LONG        = 4000; // memory guard: long side ceiling (px)
+// Clean is applied ONLY when scale >= CLEAN_MIN_SCALE.
+// Below this the image was already large (e.g. a full-page 1080p capture at
+// ×1.48) and aggressive processing harms it. 1.5 safely separates full-page
+// shots (~×1.0–1.5) from genuine small crops (~×2–3).
+const CLEAN_MIN_SCALE = 1.5;
 const CONTRAST_FACTOR = 1.5;  // (pixel-128)*factor+128; 1 = no change
 const SHARPEN_AMOUNT  = 0.8;  // unsharp-mask strength; 0 = off, 1 = strong
 const SHARPEN_BLUR_R  = 1;    // box-blur radius (px) used for unsharp mask
@@ -44,18 +48,15 @@ function loadImage(dataUrl) {
  * Returns a new Uint8Array; input is not modified.
  */
 function boxBlur(gray, width, height, radius) {
-  const h = new Uint8Array(gray.length); // horizontal pass
-  const out = new Uint8Array(gray.length); // vertical pass
+  const h   = new Uint8Array(gray.length);
+  const out = new Uint8Array(gray.length);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       let sum = 0, count = 0;
       for (let dx = -radius; dx <= radius; dx++) {
         const nx = x + dx;
-        if (nx >= 0 && nx < width) {
-          sum += gray[y * width + nx];
-          count++;
-        }
+        if (nx >= 0 && nx < width) { sum += gray[y * width + nx]; count++; }
       }
       h[y * width + x] = (sum / count + 0.5) | 0;
     }
@@ -66,10 +67,7 @@ function boxBlur(gray, width, height, radius) {
       let sum = 0, count = 0;
       for (let dy = -radius; dy <= radius; dy++) {
         const ny = y + dy;
-        if (ny >= 0 && ny < height) {
-          sum += h[ny * width + x];
-          count++;
-        }
+        if (ny >= 0 && ny < height) { sum += h[ny * width + x]; count++; }
       }
       out[y * width + x] = (sum / count + 0.5) | 0;
     }
@@ -100,16 +98,15 @@ function otsuThreshold(gray) {
     const mB = sumB / wB;
     const mF = (sumAll - sumB) / wF;
     const between = wB * wF * (mB - mF) ** 2;
-    if (between > maxVar) {
-      maxVar = between;
-      threshold = t;
-    }
+    if (between > maxVar) { maxVar = between; threshold = t; }
   }
   return threshold;
 }
 
 export async function upscaleForOCR(dataUrl) {
   // ── Phase 1: Upscale ───────────────────────────────────────────────────────
+  // `scale` is hoisted so Phase 2 can gate on it.
+  let scale = 1;
   let canvas, ctx, upscaledUrl;
 
   try {
@@ -120,11 +117,10 @@ export async function upscaleForOCR(dataUrl) {
     const shortSide = Math.min(w, h);
     const longSide  = Math.max(w, h);
 
-    // Compute scale — always draw to canvas so Phase 2 can run.
-    let scale = shortSide < TARGET_SHORT ? TARGET_SHORT / shortSide : 1;
-    if (scale > MAX_SCALE)              scale = MAX_SCALE;
-    if (longSide * scale > MAX_LONG)    scale = MAX_LONG / longSide;
-    if (scale < 1)                      scale = 1;
+    scale = shortSide < TARGET_SHORT ? TARGET_SHORT / shortSide : 1;
+    if (scale > MAX_SCALE)           scale = MAX_SCALE;
+    if (longSide * scale > MAX_LONG) scale = MAX_LONG / longSide;
+    if (scale < 1)                   scale = 1;
 
     const newW = Math.round(w * scale);
     const newH = Math.round(h * scale);
@@ -148,6 +144,15 @@ export async function upscaleForOCR(dataUrl) {
   }
 
   // ── Phase 2: Clean ────────────────────────────────────────────────────────
+  // Skip for large images (full-page shots): heavy clean degrades already-
+  // good images. Only apply when the image needed real upscaling (small crops).
+  if (scale < CLEAN_MIN_SCALE) {
+    console.log(
+      `[upscaleForOCR] clean SKIPPED — scale ×${scale.toFixed(2)} < ×${CLEAN_MIN_SCALE} (image already large)`
+    );
+    return upscaledUrl;
+  }
+
   try {
     const { width, height } = canvas;
     const imgData = ctx.getImageData(0, 0, width, height);
@@ -161,7 +166,7 @@ export async function upscaleForOCR(dataUrl) {
       gray[i] = v;
     }
 
-    // 2. Contrast boost — (pixel - 128) * CONTRAST_FACTOR + 128
+    // 2. Contrast boost — (pixel - 128) × CONTRAST_FACTOR + 128
     for (let i = 0, p = 0; p < d.length; i++, p += 4) {
       const v = Math.max(0, Math.min(255, ((gray[i] - 128) * CONTRAST_FACTOR + 128 + 0.5) | 0));
       d[p] = d[p + 1] = d[p + 2] = v;
@@ -182,7 +187,11 @@ export async function upscaleForOCR(dataUrl) {
     //    → thin strokes thicken rather than disappear)
     const otsu = otsuThreshold(gray);
     const thresh = Math.min(255, otsu + THRESHOLD_BIAS);
-    console.log(`[upscaleForOCR] clean: grayscale → contrast(×${CONTRAST_FACTOR}) → sharpen(${SHARPEN_AMOUNT}) → threshold(otsu=${otsu} bias=${THRESHOLD_BIAS} final=${thresh})`);
+    console.log(
+      `[upscaleForOCR] clean APPLIED (×${scale.toFixed(2)} ≥ ×${CLEAN_MIN_SCALE}): ` +
+      `grayscale → contrast(×${CONTRAST_FACTOR}) → sharpen(${SHARPEN_AMOUNT}) → ` +
+      `threshold(otsu=${otsu} bias=${THRESHOLD_BIAS} final=${thresh})`
+    );
     for (let i = 0, p = 0; p < d.length; i++, p += 4) {
       const v = gray[i] <= thresh ? 0 : 255;
       d[p] = d[p + 1] = d[p + 2] = v;
