@@ -20,13 +20,16 @@
  */
 
 // ── Tuneable constants ────────────────────────────────────────────────────────
-const TARGET_SHORT    = 1600; // target short side (px) for upscale step
+// Images whose short side is already >= UPSCALE_MIN_SHORT_SIDE are returned
+// untouched (original dataUrl, no canvas, no clean). Full-page captures are
+// already high-quality; upscaling them even slightly degrades ML Kit output.
+// Only genuine small crops (short side < 900 px) are upscaled and cleaned.
+const UPSCALE_MIN_SHORT_SIDE = 900;
+const TARGET_SHORT    = 1600; // target short side (px) when upscale IS applied
 const MAX_SCALE       = 3;    // cap: never upscale more than this multiplier
 const MAX_LONG        = 4000; // memory guard: long side ceiling (px)
-// Clean is applied ONLY when scale >= CLEAN_MIN_SCALE.
-// Below this the image was already large (e.g. a full-page shot at ×1.4–1.7)
-// and aggressive processing harms it. 2.2 safely separates full-page shots
-// (~×1.0–1.7) from genuine small crops (~×2.5–3).
+// Clean is applied ONLY when scale >= CLEAN_MIN_SCALE (catches the rare case
+// where a small crop's scale is dampened by MAX_LONG).
 const CLEAN_MIN_SCALE = 2.2;
 const CONTRAST_FACTOR = 1.5;  // (pixel-128)*factor+128; 1 = no change
 const SHARPEN_AMOUNT  = 0.8;  // unsharp-mask strength; 0 = off, 1 = strong
@@ -117,7 +120,17 @@ export async function upscaleForOCR(dataUrl) {
     const shortSide = Math.min(w, h);
     const longSide  = Math.max(w, h);
 
-    scale = shortSide < TARGET_SHORT ? TARGET_SHORT / shortSide : 1;
+    // Already large enough — pass through at original resolution.
+    // Upscaling even slightly degrades full-page captures that ML Kit already
+    // reads cleanly. Matches what the normal/single scan path does (no canvas).
+    if (shortSide >= UPSCALE_MIN_SHORT_SIDE) {
+      console.log(
+        `[upscaleForOCR] ${w}×${h} — no upscale (short side ${shortSide}px ≥ ${UPSCALE_MIN_SHORT_SIDE}px), passthrough`
+      );
+      return dataUrl;
+    }
+
+    scale = TARGET_SHORT / shortSide;
     if (scale > MAX_SCALE)           scale = MAX_SCALE;
     if (longSide * scale > MAX_LONG) scale = MAX_LONG / longSide;
     if (scale < 1)                   scale = 1;
