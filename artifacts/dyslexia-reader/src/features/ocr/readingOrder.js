@@ -162,7 +162,11 @@ export function sortReadingOrder(results) {
     console.log(
       "[readingOrder] detected: single-column (" + results.length + " lines)"
     );
-    return results;   // trust ML Kit's order, do not re-sort
+    // Sort by vertical position so ML Kit's block-emission order (which is not
+    // reliably top-to-bottom) cannot jumble headings or paragraphs. Every result
+    // is guaranteed to have a boundingBox here — the missingCount guard above
+    // returned early if any were absent.
+    return [...results].sort((a, b) => a.boundingBox.top - b.boundingBox.top);
   }
 
   // Two-column path.
