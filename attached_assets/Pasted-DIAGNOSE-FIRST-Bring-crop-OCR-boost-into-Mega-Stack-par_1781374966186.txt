@@ -1,0 +1,41 @@
+DIAGNOSE FIRST — Bring crop + OCR boost into Mega Stack (parity with Quick Stack)
+
+GOAL (for context — but make NO changes yet)
+Quick Stack already has: crop (react-advanced-cropper, full-res via getCroppedImg)
++ a crop ON/OFF toggle + the OCR boost (upscaleForOCR before runOCR). Mega Stack
+does NOT. We want Mega Stack capture to use the SAME crop + SAME boost, sharing
+the SAME crop toggle/state as Quick Stack (one shared setting, not a second one).
+
+DO NOT CHANGE ANY CODE. Investigate and report.
+
+INVESTIGATE
+1. Mega Stack capture flow: trace exactly how a Mega Stack page is captured and
+   processed, start to finish. Which handler fires (handleStackShutter?), and
+   what's the sequence: capture -> ??? -> runOCR -> store. Where does it differ
+   from Quick Stack's crop-ON path (handleCropConfirm)?
+2. OCR boost: does Mega Stack's capture call upscaleForOCR before runOCR, or
+   call runOCR directly? (From earlier logs, Mega Stack seems to call runOCR
+   directly — confirm.) What's the cleanest single insertion point to add the
+   boost to Mega Stack without touching Quick Stack?
+3. Crop: how is the crop screen (CropScreen) currently invoked for Quick Stack,
+   and what would it take to invoke the SAME crop step for each Mega Stack page?
+   Identify the shared pieces vs Mega-Stack-specific glue.
+4. The crop toggle: where does the crop ON/OFF state live now (localStorage key,
+   component state)? Can Mega Stack read the SAME state so it's genuinely one
+   shared toggle? Flag if it's currently local to the Quick Stack component.
+5. UX reality check: Mega Stack captures many pages in a row. If crop is ON,
+   each page would show the crop screen. Confirm how the flow would feel and
+   whether the existing toggle (skip crop when OFF) is enough, or if there's a
+   per-page friction issue to flag. (Don't solve it — just flag.)
+
+REPORT BACK (no code changes)
+- Mega Stack capture sequence vs Quick Stack, with the exact handler/file names.
+- Where the boost slots in (one insertion point).
+- What's reusable for crop vs what new glue is needed.
+- Where the crop toggle state lives and whether it can be shared as-is.
+- Any UX friction to flag (per-page crop on long captures).
+- A recommended 2-step build plan: (Step A) boost into Mega Stack, (Step B)
+  crop into Mega Stack — with files touched and risk to Quick Stack / the
+  working paths for each.
+
+We decide and build after this report.
