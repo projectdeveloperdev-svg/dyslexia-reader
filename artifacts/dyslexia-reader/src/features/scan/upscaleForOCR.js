@@ -24,10 +24,10 @@ const TARGET_SHORT    = 1600; // target short side (px) for upscale step
 const MAX_SCALE       = 3;    // cap: never upscale more than this multiplier
 const MAX_LONG        = 4000; // memory guard: long side ceiling (px)
 // Clean is applied ONLY when scale >= CLEAN_MIN_SCALE.
-// Below this the image was already large (e.g. a full-page 1080p capture at
-// ×1.48) and aggressive processing harms it. 1.5 safely separates full-page
-// shots (~×1.0–1.5) from genuine small crops (~×2–3).
-const CLEAN_MIN_SCALE = 1.5;
+// Below this the image was already large (e.g. a full-page shot at ×1.4–1.7)
+// and aggressive processing harms it. 2.2 safely separates full-page shots
+// (~×1.0–1.7) from genuine small crops (~×2.5–3).
+const CLEAN_MIN_SCALE = 2.2;
 const CONTRAST_FACTOR = 1.5;  // (pixel-128)*factor+128; 1 = no change
 const SHARPEN_AMOUNT  = 0.8;  // unsharp-mask strength; 0 = off, 1 = strong
 const SHARPEN_BLUR_R  = 1;    // box-blur radius (px) used for unsharp mask
