@@ -1,0 +1,46 @@
+Add a static "Hold flat and steady" hint to the camera screen in
+CameraView.jsx. READ-ONLY everywhere else — change nothing that works.
+
+WHAT TO ADD
+- A small text hint reading exactly: Hold flat and steady
+- Shows in ALL camera modes (scan, stack, megastack) while the camera
+  overlay is active.
+- Display-only. NO motion sensing, NO state, NO timing, NO logic.
+
+WHERE IT GOES
+- File: src/features/scan/CameraView.jsx
+- Inside the returned createPortal overlay (the .camera-overlay div).
+- Pinned to the BOTTOM edge, sitting just ABOVE the .camera-controls bar,
+  in the dark control-strip area — NOT over the live viewfinder image.
+- It must NOT push the controls, counter pill, or thumbnail strip around.
+  Use absolute/fixed positioning so it overlays, not reflows.
+- HIDE it while the crop screen is open: do not render the hint when
+  `pendingCrop` is set.
+
+STYLING
+- File: src/features/scan/CameraView.css
+- Add ONE new class: .camera-hold-hint
+- Centred text, small, semi-transparent light text on the dark strip,
+  pointer-events: none so it never blocks taps.
+- Position it above the controls bar height so it clears the buttons.
+
+HARD RULES
+- Additive only. Do not edit capture, crop, OCR, retake, save, counter,
+  toggle, or any handler.
+- One new text block in the JSX + one new CSS class. Nothing else.
+- Lesson 75: this is shared by all three modes — show it for all, don't
+  fork the component.
+
+AFTER YOU CHANGE THE SOURCE
+- Do NOT just edit and stop. Follow Lesson 64:
+  1. cd ~/workspace/artifacts/dyslexia-reader
+  2. npm run build
+  3. git add -A
+  4. git status --short   (CONFIRM new dist files with a NEW js/css hash)
+  5. git commit -m "feat: add 'Hold flat and steady' camera hint + rebuild dist"
+- Then STOP. Do not push — Phil pushes from the shell.
+
+REPORT BACK
+- Show me the exact JSX block and CSS you added.
+- Confirm git status --short listed new dist files with a new hash.
+- Do NOT claim it works — I verify on the phone.

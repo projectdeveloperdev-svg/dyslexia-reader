@@ -476,6 +476,13 @@ export default function CameraView({
           </button>
         )}
 
+        {/* Hold hint — all modes, hidden while crop screen is open */}
+        {!pendingCrop && (
+          <p className="camera-hold-hint" aria-hidden="true">
+            Hold flat and steady
+          </p>
+        )}
+
         {/* Control bar */}
         <div className="camera-controls">
           <button

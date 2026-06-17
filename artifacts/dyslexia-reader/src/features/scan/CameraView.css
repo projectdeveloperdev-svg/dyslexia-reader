@@ -95,6 +95,18 @@ body.camera-open #root {
   margin-top: 0;
 }
 
+/* ── "Hold flat and steady" hint ─────────────────────────────────────────── */
+.camera-hold-hint {
+  margin: 0;
+  padding: 0.25rem 0 0.2rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ── Thumbnail strip ─────────────────────────────────────────────────────── */
 .camera-thumb-strip {
   display: flex;
