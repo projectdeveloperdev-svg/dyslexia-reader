@@ -9,6 +9,8 @@ import { clearSnippets, addSnippet } from "./features/stack/stackStore";
 import { loadPdfPages } from "./features/pdf/pdfLoader";
 import { commitMegaStack } from "./features/megastack/commitMegaStack";
 import { updateLastPage } from "./features/megastack/megaStackStorage.js";
+// TEMPORARY — epub Step 1 probe. Remove with EpubTestTrigger.jsx when real UI is built.
+import EpubTestTrigger from "./features/epub/EpubTestTrigger";
 import "./App.css";
 
 import * as pdfjs from "pdfjs-dist";
@@ -249,6 +251,8 @@ function App() {
     <WouterRouter base="">
       <Switch>
         <Route path="/voice-lab" component={VoiceLab} />
+        {/* TEMPORARY — epub Step 1 probe. Remove when real EPUB UI is built. */}
+        <Route path="/epub-test" component={EpubTestTrigger} />
         <Route component={MainApp} />
       </Switch>
     </WouterRouter>

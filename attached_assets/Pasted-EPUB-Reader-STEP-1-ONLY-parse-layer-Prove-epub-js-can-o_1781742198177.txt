@@ -1,0 +1,66 @@
+EPUB Reader — STEP 1 ONLY: parse layer. Prove epub.js can open a DRM-free
+.epub inside the Capacitor WebView and extract text. NO UI, NO reader, NO
+DRM detection yet. Console logs only. This is a tiny throwaway-style probe
+to verify epub.js works on device before we build anything on top.
+
+DO NOT build steps 2–6. Do not touch the reader, camera, or any existing
+file. This step is fully isolated.
+
+DEPENDENCY
+- Add epubjs (the epub.js library).
+- This is a pnpm project (Lesson 19) — the PC side will run pnpm install,
+  not npm. Just add it to package.json correctly.
+
+NEW FILES (isolated — create new, edit nothing that works)
+- src/features/epub/epubParser.js
+  Exports one async function, e.g. parseEpub(fileOrArrayBuffer), that:
+    1. Opens the epub with epub.js.
+    2. Reads metadata: title, author.
+    3. Reads spine order (list of sections/chapters).
+    4. Extracts the text of the FIRST spine section (clean text only).
+    5. Returns { title, author, sectionCount, firstSectionText }.
+  - No silent failures (Lesson 2): wrap in try/catch, log a clear error.
+  - Keep ALL epub.js logic inside this one module (single-file discipline,
+    same rule that kept Mega Stack clean).
+
+TRIGGER (temporary, for testing only)
+- Add a plain HTML file input: <input type="file" accept=".epub"> 
+- On file select: read the file, call parseEpub, console.log the result.
+- A simple hidden/dev-only spot is fine (e.g. a small input rendered behind
+  a dev flag, or a /epub-test route). Make clear in a comment this trigger
+  is TEMPORARY and gets removed before the real UI is built.
+- Reset the input value AFTER reading the file, not before (Lesson 68 — the
+  blob-release trap): await the file read fully, THEN clear input.value.
+
+CAPACITOR / WEBVIEW CARE
+- epub.js uses JSZip under the hood — watch relative asset paths (Lesson 14).
+- The whole point of this step is to confirm it runs in the WebView, so make
+  the logs unmistakable.
+
+WHAT TO LOG (success criteria)
+- [epub] title: ...
+- [epub] author: ...
+- [epub] spine sections: N
+- [epub] first section text (first ~200 chars): ...
+- On any failure: [epub] PARSE FAILED: <error> — never swallow it.
+
+HARD RULES
+- Additive only. New folder src/features/epub/ + one temporary trigger.
+- Do NOT edit PagedReader, ReaderView, CameraView, stackStore, or any
+  existing working file.
+- One feature, one step. Stop after Step 1.
+
+AFTER YOU CHANGE THE SOURCE (Lesson 64 — not shipped till dist is rebuilt)
+  1. cd ~/workspace/artifacts/dyslexia-reader
+  2. npm run build
+  3. git add -A
+  4. git status --short   (CONFIRM new dist files with a NEW js hash)
+  5. git commit -m "feat(epub): step 1 parse-layer probe + rebuild dist"
+- Then STOP. Do not push — Phil pushes from the shell.
+
+REPORT BACK
+- Show me epubParser.js in full and the trigger code.
+- Confirm git status --short listed new dist files with a new hash.
+- Tell me clearly: did epub.js install and build without errors?
+- Do NOT claim it parses on device — I verify on the phone with a real
+  Gutenberg .epub.
