@@ -1,0 +1,55 @@
+EPUB Step 1 — DIAGNOSTIC ONLY. Do NOT fix anything yet. We need to find out
+WHY the first section text came back empty for a known-good Gutenberg book
+(Crime and Punishment, 45 sections). Diagnose first, change real logic later.
+
+GOAL
+- Log the text length of the FIRST 5 spine sections (not just section 0),
+  so we can tell whether ALL sections are empty (real extraction bug) or
+  just the early ones (cover/title pages — no bug, just pick a later section).
+
+WHERE
+- File: src/features/epub/epubParser.js
+- Add a TEMPORARY diagnostic loop inside parseEpub, AFTER metadata is read.
+- Do NOT remove or change the existing logic. Add alongside it.
+
+WHAT THE DIAGNOSTIC DOES
+- Loop over the first 5 spine items (or fewer if the book has fewer):
+  for i in 0..min(5, sectionCount):
+    - get spine item i
+    - load it (await item.load(book.load.bind(book)))
+    - read text three ways and log the length of each, because the empty
+      result may be a timing or property issue:
+        a) item.document?.body?.innerText
+        b) item.document?.body?.textContent
+        c) the section's contents via epub.js (e.g. item.contents) if available
+    - log: [epub-diag] section <i> href=<item.href>
+            innerText.len=<n> textContent.len=<n>
+            first80="<first 80 chars of whichever is non-empty>"
+    - unload the item
+- Wrap each section in try/catch so one bad section doesn't stop the loop;
+  log [epub-diag] section <i> ERROR: <err> and continue.
+
+ALSO LOG ONCE
+- Whether item.document is null/undefined right after load (helps tell a
+  load-timing problem from an empty-body problem):
+    [epub-diag] section 0 document present? <true/false>
+
+HARD RULES
+- This is throwaway diagnostic code — mark it // TEMP DIAGNOSTIC so we
+  remove it after.
+- Do NOT change how firstSectionText is currently produced.
+- Do NOT touch any other file. No storage, no DB, no UI changes.
+- Additive only.
+
+AFTER (Lesson 64)
+  1. cd ~/workspace/artifacts/dyslexia-reader
+  2. npm run build
+  3. git add -A
+  4. git status --short   (confirm new js hash)
+  5. git commit -m "diag(epub): log first-5-section text lengths"
+- Then STOP. Do not push. Phil pushes from the shell.
+
+REPORT BACK
+- Show me the diagnostic code you added.
+- Confirm new js hash in git status --short.
+- Do NOT interpret the result — I read the device console myself.

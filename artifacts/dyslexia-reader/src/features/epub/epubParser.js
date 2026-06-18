@@ -30,6 +30,39 @@ export async function parseEpub(fileOrArrayBuffer) {
     console.log("[epub] author:", author);
     console.log("[epub] spine sections:", sectionCount);
 
+    // TEMP DIAGNOSTIC — log text lengths for first 5 sections to diagnose empty extraction.
+    // Remove after device diagnosis is complete.
+    const diagCount = Math.min(5, sectionCount);
+    for (let i = 0; i < diagCount; i++) {
+      try {
+        const item = book.spine.get(i);
+        await item.load(book.load.bind(book));
+
+        const doc = item.document;
+        if (i === 0) {
+          console.log("[epub-diag] section 0 document present?", doc != null);
+        }
+
+        const innerText    = doc?.body?.innerText   ?? "";
+        const textContent  = doc?.body?.textContent ?? "";
+        const contents     = item.contents ?? null; // epub.js Contents object if available
+
+        const nonEmpty = innerText || textContent || "";
+        console.log(
+          `[epub-diag] section ${i} href=${item.href}` +
+          ` innerText.len=${innerText.length}` +
+          ` textContent.len=${textContent.length}` +
+          ` contents=${contents != null ? "present" : "null"}` +
+          ` first80="${nonEmpty.slice(0, 80).replace(/\n/g, "↵")}"`
+        );
+
+        item.unload();
+      } catch (diagErr) {
+        console.error(`[epub-diag] section ${i} ERROR:`, diagErr);
+      }
+    }
+    // END TEMP DIAGNOSTIC
+
     let firstSectionText = "";
     const firstItem = book.spine.get(0);
     if (firstItem) {
