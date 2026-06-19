@@ -1,26 +1,61 @@
 /**
- * epubParser.js — epub.js probe, Step 1.
+ * epubParser.js — epub.js parse layer, Step 2.
  *
- * Exports parseEpub(fileOrArrayBuffer) → { title, author, sectionCount, firstSectionText }
- * All epub.js logic is isolated here. Never import this from production UI until
- * the real reader is built (Steps 2–6).
+ * Exports parseEpub(fileOrArrayBuffer) → EpubResult (see typedef below).
+ * All epub.js logic is isolated here. Never import from production UI until
+ * the real reader is built (Steps 3–6).
+ *
+ * @typedef {{ ok: true,  drm: false, title: string, author: string,
+ *             sectionCount: number, firstSectionText: string }} EpubSuccess
+ * @typedef {{ ok: false, drm: true,  reason: "drm",   message: string }} EpubLocked
+ * @typedef {{ ok: false, drm: false, reason: "parse", message: string }} EpubError
+ * @typedef {EpubSuccess | EpubLocked | EpubError} EpubResult
  */
 
 import ePub from "epubjs";
 
 /**
  * Open a DRM-free .epub and extract metadata + first section text.
+ * Returns a tagged result object — never throws.
  *
  * @param {ArrayBuffer|string} fileOrArrayBuffer
- *   ArrayBuffer from file.arrayBuffer(), or a URL string.
- * @returns {Promise<{ title: string, author: string, sectionCount: number, firstSectionText: string }>}
- * @throws if epub.js cannot open or parse the file
+ * @returns {Promise<EpubResult>}
  */
 export async function parseEpub(fileOrArrayBuffer) {
+  let book;
   try {
-    const book = ePub(fileOrArrayBuffer);
+    book = ePub(fileOrArrayBuffer);
     await book.ready;
+  } catch (err) {
+    console.error("[epub] PARSE FAILED:", err);
+    return {
+      ok: false,
+      drm: false,
+      reason: "parse",
+      message: "This file couldn't be opened. It may be damaged or not a valid EPUB.",
+    };
+  }
 
+  try {
+    // ── DRM check: presence of META-INF/encryption.xml ───────────────────
+    // epub.js stores the raw zip as book.archive.zip (a JSZip instance).
+    // JSZip.files is a plain object keyed by the exact entry path.
+    const zip = book.archive?.zip;
+    const hasEncryption =
+      zip?.files?.["META-INF/encryption.xml"] != null;
+    console.log("[epub] encryption.xml present?", hasEncryption);
+
+    if (hasEncryption) {
+      return {
+        ok: false,
+        drm: true,
+        reason: "drm",
+        message:
+          "This book is copy-protected and can't be opened. Try a DRM-free EPUB (e.g. from Project Gutenberg).",
+      };
+    }
+
+    // ── Metadata ──────────────────────────────────────────────────────────
     const metadata = await book.loaded.metadata;
     const title = metadata.title || "(unknown)";
     const author = metadata.creator || "(unknown)";
@@ -30,39 +65,7 @@ export async function parseEpub(fileOrArrayBuffer) {
     console.log("[epub] author:", author);
     console.log("[epub] spine sections:", sectionCount);
 
-    // TEMP DIAGNOSTIC — log text lengths for first 5 sections to diagnose empty extraction.
-    // Remove after device diagnosis is complete.
-    const diagCount = Math.min(5, sectionCount);
-    for (let i = 0; i < diagCount; i++) {
-      try {
-        const item = book.spine.get(i);
-        await item.load(book.load.bind(book));
-
-        const doc = item.document;
-        if (i === 0) {
-          console.log("[epub-diag] section 0 document present?", doc != null);
-        }
-
-        const innerText    = doc?.body?.innerText   ?? "";
-        const textContent  = doc?.body?.textContent ?? "";
-        const contents     = item.contents ?? null; // epub.js Contents object if available
-
-        const nonEmpty = innerText || textContent || "";
-        console.log(
-          `[epub-diag] section ${i} href=${item.href}` +
-          ` innerText.len=${innerText.length}` +
-          ` textContent.len=${textContent.length}` +
-          ` contents=${contents != null ? "present" : "null"}` +
-          ` first80="${nonEmpty.slice(0, 80).replace(/\n/g, "↵")}"`
-        );
-
-        item.unload();
-      } catch (diagErr) {
-        console.error(`[epub-diag] section ${i} ERROR:`, diagErr);
-      }
-    }
-    // END TEMP DIAGNOSTIC
-
+    // ── First section text ────────────────────────────────────────────────
     let firstSectionText = "";
     const firstItem = book.spine.get(0);
     if (firstItem) {
@@ -77,9 +80,14 @@ export async function parseEpub(fileOrArrayBuffer) {
       firstSectionText.slice(0, 200)
     );
 
-    return { title, author, sectionCount, firstSectionText };
+    return { ok: true, drm: false, title, author, sectionCount, firstSectionText };
   } catch (err) {
     console.error("[epub] PARSE FAILED:", err);
-    throw err;
+    return {
+      ok: false,
+      drm: false,
+      reason: "parse",
+      message: "This file couldn't be opened. It may be damaged or not a valid EPUB.",
+    };
   }
 }

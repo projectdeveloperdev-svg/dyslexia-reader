@@ -1,0 +1,68 @@
+EPUB Reader — two things in one pass: (1) remove the temp diagnostic from
+Step 1, (2) build Step 2: DRM detection. Nothing else. Stay isolated — do
+not touch the reader, camera, storage, or any other file.
+
+PART 1 — REMOVE THE TEMP DIAGNOSTIC
+- File: src/features/epub/epubParser.js
+- Delete the block between "// TEMP DIAGNOSTIC" and "// END TEMP DIAGNOSTIC"
+  (the first-5-sections logging loop). Remove it completely.
+- Leave the real metadata + firstSectionText logic exactly as it is.
+
+PART 2 — STEP 2: DRM DETECTION
+Goal: if the user picks a DRM-locked .epub, detect it and return a clear
+"locked" result so the UI can show a friendly message. NEVER attempt to
+bypass DRM. No silent failure (Lesson 2).
+
+- File: src/features/epub/epubParser.js
+- Detection approach (do BOTH checks):
+  a) ENCRYPTION FILE: a DRM/obfuscated epub contains META-INF/encryption.xml.
+     After opening the book, check the epub's archive/zip for the presence
+     of "META-INF/encryption.xml". If present → locked.
+     (epub.js exposes the archive; if the path differs, read the container
+     via the book's archive API. If you cannot reliably read the zip entry,
+     log how you attempted it.)
+  b) PARSE FAILURE: wrap the existing parse in try/catch. If epub.js throws
+     in a way consistent with an unreadable/encrypted package, treat as
+     locked rather than a generic error where detectable.
+
+- RETURN SHAPE — make it explicit so the future UI can branch cleanly:
+    Success (DRM-free):
+      { ok: true, drm: false, title, author, sectionCount, firstSectionText }
+    Locked:
+      { ok: false, drm: true, reason: "drm",
+        message: "This book is copy-protected and can't be opened. Try a
+        DRM-free EPUB (e.g. from Project Gutenberg)." }
+    Other parse error (not DRM):
+      { ok: false, drm: false, reason: "parse",
+        message: "This file couldn't be opened. It may be damaged or not a
+        valid EPUB." }
+  NOTE: this changes parseEpub's return shape. The ONLY caller is the temp
+  EpubTestTrigger — update it to read the new shape and log:
+    [epub] result ok=<> drm=<> title=<> sections=<> | message=<if any>
+  Do not let this shape change touch any other file (nothing else imports it).
+
+- LOGGING (clear, no swallowing):
+    [epub] encryption.xml present? <true/false>
+    [epub] PARSE FAILED: <err>   (only on real throw)
+
+HARD RULES
+- Additive/iso­lated: only epubParser.js and EpubTestTrigger.jsx change.
+- No DRM bypass, ever. Detect and report only.
+- No storage, no DB, no UI beyond the temp trigger's console logs.
+- Do NOT touch PagedReader, CameraView, stackStore, App routing logic.
+
+AFTER (Lesson 64)
+  1. cd ~/workspace/artifacts/dyslexia-reader
+  2. npm run build
+  3. git add -A
+  4. git status --short   (confirm new js hash)
+  5. git commit -m "feat(epub): step 2 DRM detection + remove step-1 diagnostic"
+- Then STOP. Do not push. Phil pushes from the shell.
+
+REPORT BACK
+- Show me the full updated epubParser.js and the trigger changes.
+- Confirm the diagnostic block is gone.
+- Confirm new js hash in git status --short.
+- Tell me plainly: did it build clean? Any uncertainty about reading the
+  encryption.xml entry from epub.js's archive (so I know what we can/can't
+  trust until we test a real locked file)?
