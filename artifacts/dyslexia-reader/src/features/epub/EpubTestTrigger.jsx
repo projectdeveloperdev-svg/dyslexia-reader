@@ -6,6 +6,7 @@
 
 import { useState, useRef } from "react";
 import { parseEpub } from "./epubParser";
+import { chunkText } from "./chunkText";
 import PagedReader from "../reader/PagedReader";
 
 export default function EpubTestTrigger() {
@@ -54,10 +55,22 @@ export default function EpubTestTrigger() {
     }
   }
 
-  // ── Reader: one section = one page (Step 3; chunking is Step 4) ──────────
+  // ── Reader: STEP 4 — chunk every section into TTS-safe pages (≤1200 chars) ─
   if (result?.ok) {
-    // Map each spine section to the { image, ocrText } shape PagedReader expects.
-    const snippets = result.sections.map((s) => ({ image: null, ocrText: s.text }));
+    // Flatten all sections into chunk-pages in spine order.
+    // Section 0 chunks first, then section 1 chunks, etc.
+    // Whitespace-only sections produce no pages (chunkText returns []).
+    const snippets = [];
+    for (const section of result.sections) {
+      for (const chunk of chunkText(section.text)) {
+        snippets.push({ image: null, ocrText: chunk });
+      }
+    }
+
+    console.log(`[epub] pages built: ${snippets.length} from ${result.sections.length} sections`);
+    const largestPage = snippets.reduce((max, s) => Math.max(max, s.ocrText.length), 0);
+    console.log(`[epub] largest page chars: ${largestPage}`);
+
     return (
       <PagedReader
         snippets={snippets}

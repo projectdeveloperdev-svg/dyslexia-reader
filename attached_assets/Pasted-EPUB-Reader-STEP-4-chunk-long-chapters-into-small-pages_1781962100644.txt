@@ -1,0 +1,81 @@
+EPUB Reader — STEP 4: chunk long chapters into small pages. This is now
+REQUIRED for TTS to work at all (the runaway is fixed, but whole-chapter pages
+of 4k–40k chars FAIL Android TTS with "Failed to read text"). Chunking gives
+TTS speakable text AND removes long scrolling pages.
+
+Keep the Step-3 fixes intact (skip empty pages, no-advance-on-fail, clean
+text before speak). Do NOT do Step 5 (resume) or Step 6 (library).
+
+────────────────────────────────────────
+PART 1 — CHUNKING (the core)
+- Add a small pure helper, e.g. src/features/epub/chunkText.js, exporting
+  chunkText(text, maxChars = 1200) -> string[].
+- Rules:
+  • Target ~1200 characters per chunk (conservative — TTS reliability first).
+  • Break at SENTENCE ENDS where possible (after . ! ? and following space/
+    newline). Never break mid-word.
+  • If a single sentence is longer than maxChars, fall back to breaking at a
+    word boundary (space), never mid-word.
+  • Preserve order exactly. Concatenating all chunks back = original text
+    (aside from whitespace at the join points). No content dropped, no
+    reordering.
+  • Whitespace-only / empty input -> return [] (that section contributes no
+    pages).
+- Keep it pure and standalone (no React, no storage). Easy to unit-reason about.
+
+PART 2 — FEED CHUNKS AS PAGES (EpubTestTrigger.jsx)
+- After parse, build the page list by chunking EVERY section in spine order:
+  for each section (in order): chunkText(section.text) -> push each chunk as
+  one page. Flatten to a single ordered array of chunk-pages.
+- Map each chunk-page to the reader the same shape as now:
+  { image: null, ocrText: <chunk text> }.
+- SPINE ORDER PRESERVED across sections and chunks. Section 0 chunks, then
+  section 1 chunks, etc.
+- Log once after building:
+  [epub] pages built: <total pages> from <section count> sections
+  [epub] largest page chars: <n>   (sanity-check it's <= ~1200)
+
+PART 3 — REUSE THE READER (do NOT change its behaviour)
+- PagedReader / ReaderView already render an array of pages; just pass more,
+  smaller pages. Do NOT change their logic.
+- The Step-3 props stay (disableWordTap / collapseWhitespace for EPUB).
+- Confirm Quick Stack / Mega Stack / PDF / single Scan are untouched (they
+  pass their own pages as before).
+
+PART 4 — DIAGNOSE ONLY (no fix): the TypeError
+- A "TypeError: e is not a function" fires on a click (onClick) in the EPUB
+  reader (seen repeatedly in the device log, around the reader controls).
+- INVESTIGATE and REPORT in plain words what handler/prop is being called
+  that isn't a function (likely a control wired to something undefined in the
+  EPUB/disableWordTap path, e.g. a tap/seek handler that's now null).
+- DO NOT FIX IT in this pass. Just tell me: which onClick, which prop, why it's
+  undefined, and the smallest safe fix you'd propose. We decide separately.
+
+────────────────────────────────────────
+EXPECTED RESULT ON DEVICE
+- Press Read on a chapter: TTS now succeeds on each small chunk-page and
+  auto-advances chunk -> chunk -> next chapter. No "Failed to read text" on
+  real content. Empty front-matter still skipped. No runaway.
+
+HARD RULES
+- New helper + EpubTestTrigger wiring only. Reader logic unchanged.
+- Preserve spine order. No content dropped. No DB, no storage, no resume,
+  no library. EPUB stays on /epub-test.
+- Keep all Step-3 TTS fixes.
+
+AFTER (Lesson 64)
+  1. cd ~/workspace/artifacts/dyslexia-reader
+  2. npm run build
+  3. git add -A
+  4. git status --short   (confirm new js hash)
+  5. git commit -m "feat(epub): step 4 chunk chapters into TTS-safe pages"
+- STOP. Do not push. Phil pushes from the shell.
+
+REPORT BACK
+- chunkText.js in full + the trigger wiring.
+- The two [epub] log lines' expected output (page count, largest page chars).
+- PART 4: plain-words diagnosis of the TypeError + smallest proposed fix
+  (but NOT applied).
+- Confirm reader logic untouched + which call sites you checked.
+- New js hash.
+- Do NOT claim it works — I verify on the phone.
