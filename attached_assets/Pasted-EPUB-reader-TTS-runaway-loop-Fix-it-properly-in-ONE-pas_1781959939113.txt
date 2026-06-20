@@ -1,0 +1,80 @@
+EPUB reader — TTS runaway loop. Fix it properly in ONE pass. First confirm the
+mechanism in code, then apply all fixes together. Do NOT ship a partial fix.
+
+CONFIRMED FROM DEVICE LOG (ground truth):
+- On EPUB front-matter pages, native TTS throws: "Failed to read text".
+- A failed speak() is being treated like a finished page → auto-advance fires →
+  next page also empty/whitespace → speak fails → advance → infinite loop,
+  hundreds of times/sec, racing to the last page.
+- First real content page reads fine. Loop starts on the short/empty sections
+  (cover, "PART I" = 66 chars mostly newlines, and the 3 empty sections).
+
+STEP 1 — CONFIRM (read-only, report before editing):
+In useTTS (the TTS hook) and the auto-advance path (onPlaybackEnd /
+stablePlaybackEnd / onPlaybackEndRef in ReaderView + PagedReader), confirm:
+  a) What text is passed to speak() on a failing page (is it ""/whitespace
+     only?). 
+  b) Whether speak()'s FAILURE path calls or leads to the same
+     onPlaybackEnd/advance callback as a NATURAL end (this is the core bug:
+     failure must NOT count as natural completion).
+  c) Whether anything strips/normalises whitespace/newlines before speak()
+     (Lesson 71 — scan text goes through cleanText; EPUB text likely does NOT).
+Report findings in plain words. Then proceed to STEP 2 in the same task.
+
+STEP 2 — FIX (all three, together):
+
+FIX 1 — Don't speak empty/whitespace pages:
+  Before calling speak(), if the page text trimmed to nothing (or has no
+  word characters), DO NOT call speak(). Treat the page as "nothing to read".
+
+FIX 2 — A failed/empty speak must NOT trigger auto-advance:
+  Auto-advance may ONLY fire on a genuine NATURAL end of real speech. A
+  speak() failure (the catch path) or a skipped empty page must NOT call
+  onPlaybackEnd / must NOT advance the page. This is what kills the loop.
+  - If the manualStop/natural-end logic (Lesson 69 pattern) is the gate, make
+    sure the FAILURE path sets the flag so it cannot be read as natural end.
+
+FIX 3 — Clean EPUB text before speak (Lesson 71, length-preserving NOT required
+here since EPUB has no word-highlight dependency to preserve — but do not mutate
+the DISPLAYED text):
+  Collapse runs of newlines/whitespace in the text passed to speak() so the
+  TTS engine gets clean prose, not raw "↵↵ ↵ ↵". Transform at the speak step
+  only; do NOT change what's shown on screen.
+
+GUARD AGAINST RUNAWAY (belt-and-braces):
+  Even with the above, ensure auto-advance cannot fire faster than real speech:
+  it should only advance once a real utterance has actually completed, never
+  synchronously in a tight loop. If an empty page is skipped, advancing (if at
+  all) must be a single, guarded step — never a self-retriggering cascade.
+
+SCOPE / SAFETY:
+- This bug is sealed in the EPUB path, but useTTS/ReaderView are SHARED. Any
+  change to shared TTS/advance logic MUST preserve existing behaviour for
+  single Scan, Quick Stack, Mega Stack, and PDF. Gate by prop if needed
+  (Lesson 75). Confirm the call sites.
+- Empty-page-skip and clean-before-speak are safe for all callers (scans rarely
+  have empty pages; cleaning whitespace before speak only helps). But the
+  "failure must not advance" fix MUST NOT change how a normal single page
+  behaves at its natural end.
+- No DB, no storage changes. EPUB stays on the temp /epub-test route.
+
+ADD ONE DIAGNOSTIC LOG (so device proves the fix):
+  [epub-tts] page <n>: empty=<bool> chars=<n> -> <spoke|skipped|failed>
+  [epub-tts] advance reason=<natural-end|skip|none>
+  This lets us SEE on device that failures no longer cause advances.
+
+AFTER (Lesson 64):
+  1. cd ~/workspace/artifacts/dyslexia-reader
+  2. npm run build
+  3. git add -A
+  4. git status --short   (confirm new js hash)
+  5. git commit -m "fix(epub): stop TTS runaway — skip empty pages, no advance on speak-fail, clean text before speak"
+- STOP. Do not push. Phil pushes from the shell.
+
+REPORT BACK:
+- STEP 1 findings (the three confirmations, in plain words).
+- Exactly what changed for each of FIX 1/2/3 + the runaway guard.
+- Which shared call sites you checked and confirmed unchanged (Scan, Quick
+  Stack, Mega Stack, PDF).
+- New js hash.
+- Do NOT claim it works — I verify on the phone.

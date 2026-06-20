@@ -30,7 +30,7 @@ if (!pluginAvailable) {
   );
 }
 
-export function useTTS(text) {
+export function useTTS(text, { onError, collapseWhitespace = false } = {}) {
   const [ttsState,      setTtsState]      = useState("idle"); // "idle" | "speaking" | "paused"
   const [rate,          setRate]          = useState(1);
   const [pitch,         setPitch]         = useState(1);
@@ -50,6 +50,9 @@ export function useTTS(text) {
   const speakIdRef      = useRef(0);       // incremented each speak() to detect stale completions
   const listenerRef     = useRef(null);    // onRangeStart PluginListenerHandle
   const ttsStateRef     = useRef("idle");  // mirrors ttsState for use inside async callbacks
+  // Option refs — kept in sync so doSpeak (a stable callback) reads current values.
+  const onErrorRef            = useRef(onError);
+  const collapseWhitespaceRef = useRef(collapseWhitespace);
 
   // Keep all mirrors in sync.
   useEffect(() => { textRef.current    = text;          }, [text]);
@@ -58,6 +61,8 @@ export function useTTS(text) {
   useEffect(() => { voiceRef.current   = selectedVoice; }, [selectedVoice]);
   useEffect(() => { voicesRef.current  = voices;        }, [voices]);
   useEffect(() => { ttsStateRef.current = ttsState;     }, [ttsState]);
+  useEffect(() => { onErrorRef.current            = onError;           }, [onError]);
+  useEffect(() => { collapseWhitespaceRef.current = collapseWhitespace;}, [collapseWhitespace]);
 
   // Recompute word char-offset table whenever text changes.
   useEffect(() => {
@@ -183,10 +188,32 @@ export function useTTS(text) {
       ? allVoices.findIndex((v) => v.voiceURI === voiceRef.current.voiceURI)
       : -1;
 
-    // Strip newlines from the spoken slice only — display is unchanged.
-    // 1-for-1 replacement (\n → space) keeps character offsets aligned with
-    // wordsRef so onRangeStart word-highlighting continues to work correctly.
-    const spokenText = text.slice(offset).replace(/\n/g, " ");
+    // FIX 3: Build the spoken text from the raw slice.
+    // Default (scan): 1-for-1 \n→space so char offsets stay aligned with
+    // wordsRef and onRangeStart word-highlighting keeps working.
+    // collapseWhitespace (EPUB): also collapse runs and trim — EPUB sections
+    // can be mostly newlines; the TTS engine rejects strings of spaces.
+    // Word-highlight offsets do not matter in EPUB mode (disableWordTap=true).
+    const rawSlice   = text.slice(offset).replace(/\n/g, " ");
+    const spokenText = collapseWhitespaceRef.current
+      ? rawSlice.replace(/\s+/g, " ").trim()
+      : rawSlice;
+
+    // FIX 1: Do NOT call speak() on a page with no word characters.
+    // Passing "" or "   " to the native TTS engine throws "Failed to read text",
+    // and the catch block used to treat that as a natural page end → runaway loop.
+    const isEmpty = !/\w/.test(spokenText);
+    if (isEmpty) {
+      if (speakIdRef.current === id) {
+        console.log(`[epub-tts] chars=${spokenText.length} -> skipped (empty page, suppressing advance)`);
+        // Mark as non-natural end so advance is suppressed (same as FIX 2).
+        onErrorRef.current?.();
+        removeRangeListener();
+        setWordIndex(-1);
+        setTtsState("idle");
+      }
+      return;
+    }
 
     const options = {
       text:   spokenText,
@@ -207,6 +234,7 @@ export function useTTS(text) {
 
       // Natural completion — only process if this speak session is still current.
       if (speakIdRef.current === id) {
+        console.log(`[epub-tts] chars=${spokenText.length} -> spoke (natural end)`);
         removeRangeListener();
         charIndexRef.current = 0;
         setWordIndex(-1);
@@ -215,6 +243,11 @@ export function useTTS(text) {
     } catch (err) {
       if (speakIdRef.current === id) {
         console.error("[useTTS] speak() failed:", err);
+        console.log(`[epub-tts] chars=${spokenText.length} -> failed (suppressing advance)`);
+        // FIX 2: mark as non-natural so the speaking→idle transition in
+        // ReaderView does NOT fire onPlaybackEnd and does NOT advance the page.
+        // This is the core loop-killer: speak failures must never auto-advance.
+        onErrorRef.current?.();
         removeRangeListener();
         setWordIndex(-1);
         setTtsState("idle");

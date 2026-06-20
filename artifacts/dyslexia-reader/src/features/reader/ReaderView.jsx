@@ -117,12 +117,26 @@ export default function ReaderView({
   }
 
   // ── TTS ───────────────────────────────────────────────────────────────
+  // manualStopRef declared here (before useTTS) so it can be closed over
+  // by the onError callback passed into the hook.
+  // true  = user paused/stopped OR speak() threw — suppresses advance.
+  // false = cleared when TTS re-enters "speaking" (resume / new play).
+  const manualStopRef = useRef(false);
+
   const {
     ttsState, rate, pitch, voices, selectedVoice,
     wordIndex,
     toggle, stop, seekToWord,
     changeRate, changePitch, changeVoice,
-  } = useTTS(displayText);
+  } = useTTS(displayText, {
+    // FIX 2: when speak() throws, mark this as a non-natural end so the
+    // speaking→idle transition in the effect below does NOT fire onPlaybackEnd
+    // and does NOT trigger auto-advance.
+    onError: () => { manualStopRef.current = true; },
+    // FIX 3: collapse whitespace runs before speaking in EPUB mode (where
+    // word-highlight offsets do not matter). Scan mode keeps 1-for-1 \n→space.
+    collapseWhitespace: disableWordTap,
+  });
 
   // Restore rate and pitch from localStorage on mount.
   // ttsState is always "idle" here so changeRate/changePitch only set state.
@@ -200,10 +214,11 @@ export default function ReaderView({
   }, [displayText, ttsState, toggle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Natural-end detection (PagedReader path) ──────────────────────────
-  // manualStopRef: true when the user explicitly paused/stopped, so we can
-  // distinguish that from natural TTS completion. Reset to false when TTS
-  // transitions back to "speaking" (resume / new play).
-  const manualStopRef = useRef(false);
+  // manualStopRef is declared above (before useTTS) and is also written by
+  // the onError callback (speak failures). All three suppress onPlaybackEnd:
+  //   1. User pause/stop (wrappedToggle / wrappedStop)
+  //   2. speak() threw "Failed to read text"  (onError callback in useTTS)
+  //   3. Empty page skipped before toggle()   (belt-check in auto-play effect)
   const prevTtsStateRef = useRef("idle");
   const onPlaybackEndRef = useRef(onPlaybackEnd);
   useEffect(() => { onPlaybackEndRef.current = onPlaybackEnd; }, [onPlaybackEnd]);
@@ -211,9 +226,12 @@ export default function ReaderView({
   useEffect(() => {
     const prev = prevTtsStateRef.current;
     prevTtsStateRef.current = ttsState;
-    // Natural end: was speaking, now idle, and user didn't manually stop.
+    // Natural end: was speaking, now idle, and NOT a manual-stop or speak-fail.
     if (prev === "speaking" && ttsState === "idle" && !manualStopRef.current) {
+      console.log("[epub-tts] advance reason=natural-end");
       if (onPlaybackEndRef.current) onPlaybackEndRef.current();
+    } else if (prev === "speaking" && ttsState === "idle" && manualStopRef.current) {
+      console.log("[epub-tts] advance reason=none (manual-stop or speak-failed)");
     }
     // Reset the flag whenever TTS resumes/starts — next end may be natural again.
     if (ttsState === "speaking") {
@@ -243,6 +261,17 @@ export default function ReaderView({
   useEffect(() => {
     if (!autoPlayKey) return;
     manualStopRef.current = false;
+    // Belt check: if there is no readable content, skip toggle() entirely.
+    // This means ttsState never enters "speaking" → no speaking→idle transition
+    // → onPlaybackEnd never fires → no advance. doSpeak also detects this
+    // (braces), but this outer guard avoids even starting the TTS cycle.
+    const hasContent = /\w/.test(displayText ?? "");
+    const chars = (displayText ?? "").length;
+    if (!hasContent) {
+      console.log(`[epub-tts] autoplay: empty=true chars=${chars} -> skipped toggle`);
+      return;
+    }
+    console.log(`[epub-tts] autoplay: empty=false chars=${chars} -> toggle`);
     toggle();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
