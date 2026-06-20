@@ -1,0 +1,52 @@
+EPUB Step 3 — DIAGNOSTIC ONLY. Do NOT change any behaviour, do NOT fix
+anything. Investigate a swipe/scroll/tap conflict in PagedReader and REPORT
+BACK in plain words. Read-only.
+
+THE TWO SYMPTOMS (on device, EPUB book in PagedReader — long scrollable pages)
+1. Tapping/pressing anywhere on the page text flicks FORWARD to the next page,
+   and repeated taps keep advancing until the last page.
+2. Scrolling DOWN a long chapter sometimes flips to the next page before the
+   user reaches the bottom (where the controls are).
+
+CONTEXT
+- PagedReader was originally built for SCANS: short snippets, one screen, no
+  vertical scrolling. Horizontal swipe = change page.
+- EPUB now feeds it LONG sections (one chapter = one long scrollable page),
+  which scans/PDF never did. The handlers may be built on the assumption that
+  pages don't scroll.
+
+WHAT TO INVESTIGATE AND REPORT (no code changes)
+- Open PagedReader.jsx (and any touch/gesture handler it uses).
+- Report exactly how page-change is triggered:
+  a) The touch handlers present (handleTouchStart / Move / End, onClick, etc.)
+     and what threshold/logic decides "this is a horizontal swipe → next page."
+  b) Whether ANY tap/click (not a drag) can trigger a page change — i.e. is
+     there a click/tap-to-advance path, or a swipe whose threshold is so low a
+     tap counts as a swipe?
+  c) How vertical scrolling is handled inside a page. Is the page content
+     actually scrollable? Is there logic that distinguishes vertical scroll
+     from horizontal swipe (e.g. comparing deltaX vs deltaY), or does any
+     touch movement get treated as a horizontal page swipe?
+  d) Whether the existing "ignore swipes that start on controls" logic exists
+     (the handleTouchStart early-return on input/button/textarea from Quick
+     Stack) and whether it applies here.
+- Report how SCANS avoided these symptoms (likely: short pages, no scroll, so
+  vertical movement never happened). Confirm that theory or correct it.
+
+KEY QUESTION TO ANSWER
+- Are BOTH symptoms explained purely by "pages are now long and scrollable,
+  and the swipe handler treats vertical movement / taps as page changes"?
+- OR is there also a genuine tap-to-advance bug independent of page length?
+- State which, with the specific lines/logic that prove it.
+
+HARD RULES
+- Change NOTHING. No fix, no edit, no build. This is investigation only.
+- Do not modify PagedReader, ReaderView, or any file.
+- Just READ and REPORT.
+
+REPORT BACK
+- Plain-language explanation of the root cause(s).
+- The specific handler logic responsible (quote the relevant lines).
+- Whether Step 4 pagination (chunking long chapters into non-scrolling pages)
+  would resolve both symptoms, or whether a handler fix is ALSO needed.
+- Your recommendation: fix the handler, do pagination, or both — and why.
