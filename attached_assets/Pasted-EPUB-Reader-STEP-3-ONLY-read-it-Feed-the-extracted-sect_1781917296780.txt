@@ -1,0 +1,65 @@
+EPUB Reader — STEP 3 ONLY: read it. Feed the extracted section text into the
+EXISTING PagedReader so a real book shows on screen, readable, with fonts /
+pinch-resize / TTS all working. Do NOT build steps 4–6 (no pagination
+chunking, no resume, no library). Stay isolated.
+
+REUSE, DON'T REBUILD
+- Reuse the existing PagedReader / ReaderView exactly as PDF and Mega Stack
+  do. Feed it the SAME text-pipeline shape they feed it.
+- Lesson 75: add EPUB as a new CALLER passing props. Do NOT edit PagedReader
+  or ReaderView behaviour for existing callers. If you need anything new from
+  the reader, add an OPTIONAL prop that defaults to current behaviour.
+- Quick Stack, Mega Stack, PDF must behave EXACTLY as before. Device-prove it.
+
+PART 1 — parser returns ALL sections (spine order)
+- File: src/features/epub/epubParser.js
+- On success, in addition to the current fields, return an array of every
+  spine section's clean text IN SPINE ORDER:
+    sections: [ { index, href, text }, ... ]   // ALL sections, order = spine
+- Show ALL sections. Do NOT skip cover / legal / preface / title pages.
+  Spine order = reading order, always. No content-aware filtering.
+- Load each section, read body innerText/textContent (same method that worked
+  in the diagnostic), trim, unload. try/catch per section so one bad section
+  logs and continues, contributing an empty-text page rather than aborting.
+- Keep the existing { ok, drm, title, author, sectionCount, firstSectionText }
+  fields so nothing else breaks; just ADD `sections`.
+- Log: [epub] extracted N section texts (non-empty: M)
+
+PART 2 — show it in PagedReader
+- File: src/features/epub/EpubTestTrigger.jsx (still the temp /epub-test route)
+- After a successful ok=true parse, render the existing PagedReader with the
+  EPUB sections as pages: one section = one page FOR NOW (Step 4 will chunk
+  long chapters; do not chunk yet).
+- Map each section's text to a reader page the same way the other callers do.
+- DRM/parse failure (ok=false) → show the friendly message text on screen
+  (not just console) — no silent failure (Lesson 2). Plain text is fine; no
+  fancy UI.
+- This is still the temporary test screen — mark TEMP. Real entry UI comes later.
+
+HARD RULES
+- Additive/isolated: epubParser.js + EpubTestTrigger.jsx only. Plus, IF the
+  reader genuinely needs an optional prop, PagedReader/ReaderView may gain an
+  OPTIONAL prop that defaults to existing behaviour — nothing more.
+- No storage, no DB, no resume, no chunking, no library, no file-picker change.
+- One section = one page for now. Long chapters being one long page is EXPECTED.
+
+MEMORY NOTE
+- Step 3 may load all sections' text at once (text is light, no images). Add a
+  log of total characters loaded so we can watch memory on device:
+    [epub] total chars loaded: <n>
+- Do not add lazy-loading yet (that's a later concern); just log the size.
+
+AFTER (Lesson 64)
+  1. cd ~/workspace/artifacts/dyslexia-reader
+  2. npm run build
+  3. git add -A
+  4. git status --short   (confirm new js hash)
+  5. git commit -m "feat(epub): step 3 render sections in PagedReader"
+- Then STOP. Do not push. Phil pushes from the shell.
+
+REPORT BACK
+- Show me the parser changes (the sections array) and the trigger's reader wiring.
+- Tell me EXACTLY whether you touched PagedReader/ReaderView, and if so, show
+  the optional prop and confirm it defaults to existing behaviour.
+- Confirm new js hash.
+- Do NOT claim it reads on device — I verify on the phone.

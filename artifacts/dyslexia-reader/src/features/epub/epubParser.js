@@ -65,22 +65,40 @@ export async function parseEpub(fileOrArrayBuffer) {
     console.log("[epub] author:", author);
     console.log("[epub] spine sections:", sectionCount);
 
-    // ── First section text ────────────────────────────────────────────────
-    let firstSectionText = "";
-    const firstItem = book.spine.get(0);
-    if (firstItem) {
-      await firstItem.load(book.load.bind(book));
-      const body = firstItem.document?.body;
-      firstSectionText = (body?.innerText ?? body?.textContent ?? "").trim();
-      firstItem.unload();
+    // ── All sections in spine order ───────────────────────────────────────
+    // One entry per spine item; a bad section logs and contributes empty text
+    // rather than aborting the whole parse.
+    const sections = [];
+    let totalChars = 0;
+
+    for (let i = 0; i < sectionCount; i++) {
+      try {
+        const item = book.spine.get(i);
+        await item.load(book.load.bind(book));
+        const body = item.document?.body;
+        const text = (body?.innerText ?? body?.textContent ?? "").trim();
+        item.unload();
+        sections.push({ index: i, href: item.href, text });
+        totalChars += text.length;
+      } catch (sectionErr) {
+        console.error(`[epub] section ${i} failed:`, sectionErr);
+        sections.push({ index: i, href: "", text: "" });
+      }
     }
+
+    const nonEmpty = sections.filter((s) => s.text.length > 0).length;
+    console.log(`[epub] extracted ${sectionCount} section texts (non-empty: ${nonEmpty})`);
+    console.log(`[epub] total chars loaded: ${totalChars}`);
+
+    // firstSectionText kept for backwards-compat with existing callers/logs.
+    const firstSectionText = sections[0]?.text ?? "";
 
     console.log(
       "[epub] first section text (first ~200 chars):",
       firstSectionText.slice(0, 200)
     );
 
-    return { ok: true, drm: false, title, author, sectionCount, firstSectionText };
+    return { ok: true, drm: false, title, author, sectionCount, firstSectionText, sections };
   } catch (err) {
     console.error("[epub] PARSE FAILED:", err);
     return {

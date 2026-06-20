@@ -9,10 +9,14 @@ import "./PagedReader.css";
  *  initialPage?  number        — page to open on (default 0). Clamped by caller.
  *  onPageChange? (idx: number) — fired once per settled page (Mega Stack only).
  *                                Never called for Quick Stack / PDF (those pass nothing).
+ *  snippets?     Array<{image,ocrText}> — optional override. When provided, used
+ *                                instead of getSnippets(). Existing callers never
+ *                                pass this so their behaviour is unchanged.
  */
-export default function PagedReader({ onExit, initialPage = 0, onPageChange }) {
+export default function PagedReader({ onExit, initialPage = 0, onPageChange, snippets: snippetsProp }) {
   // Read the stack once on mount — stable for the lifetime of this component.
-  const [snippets] = useState(() => getSnippets().slice());
+  // snippetsProp (EPUB) takes precedence when provided; all other callers omit it.
+  const [snippets] = useState(() => snippetsProp ?? getSnippets().slice());
 
   const [pageIndex, setPageIndex] = useState(initialPage);
   const [slideDir, setSlideDir] = useState(null); // "right" | "left" | null

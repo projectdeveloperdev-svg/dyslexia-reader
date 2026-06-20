@@ -1,60 +1,97 @@
 /**
- * TEMPORARY — epub.js parse-layer probe, Step 1/2 only.
+ * TEMPORARY — epub.js parse-layer probe, Steps 1–3.
  * Reachable at /epub-test during development.
  * Remove this file and its route in App.jsx before the real EPUB UI is built.
  */
 
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { parseEpub } from "./epubParser";
+import PagedReader from "../reader/PagedReader";
 
 export default function EpubTestTrigger() {
   const inputRef = useRef(null);
+  // null = picker, "loading" = parsing, EpubResult = done
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     console.log("[epub-test] file selected:", file.name, "size:", file.size, "bytes");
+    setLoading(true);
+    setResult(null);
     try {
       const arrayBuffer = await file.arrayBuffer();
       // Clear AFTER the read completes — not before (blob-release trap).
       e.target.value = "";
-      const result = await parseEpub(arrayBuffer);
-      // Log the tagged result so all branches are visible in the console.
-      if (result.ok) {
+      const parsed = await parseEpub(arrayBuffer);
+      if (parsed.ok) {
         console.log(
           `[epub] result ok=true drm=false` +
-          ` title="${result.title}"` +
-          ` author="${result.author}"` +
-          ` sections=${result.sectionCount}` +
-          ` firstSectionPreview="${result.firstSectionText.slice(0, 200)}"`
+          ` title="${parsed.title}"` +
+          ` author="${parsed.author}"` +
+          ` sections=${parsed.sectionCount}`
         );
       } else {
         console.log(
-          `[epub] result ok=false drm=${result.drm}` +
-          ` reason=${result.reason}` +
-          ` | message="${result.message}"`
+          `[epub] result ok=false drm=${parsed.drm}` +
+          ` reason=${parsed.reason}` +
+          ` | message="${parsed.message}"`
         );
       }
+      setResult(parsed);
     } catch (err) {
       // parseEpub no longer throws — this catches unexpected regressions.
       console.error("[epub-test] unexpected throw:", err);
+      setResult({
+        ok: false,
+        drm: false,
+        reason: "parse",
+        message: "This file couldn't be opened. It may be damaged or not a valid EPUB.",
+      });
+    } finally {
+      setLoading(false);
     }
   }
 
+  // ── Reader: one section = one page (Step 3; chunking is Step 4) ──────────
+  if (result?.ok) {
+    // Map each spine section to the { image, ocrText } shape PagedReader expects.
+    const snippets = result.sections.map((s) => ({ image: null, ocrText: s.text }));
+    return (
+      <PagedReader
+        snippets={snippets}
+        onExit={() => setResult(null)}
+      />
+    );
+  }
+
+  // ── Error screen (DRM or parse failure) — shown on screen, not just console ─
+  if (result && !result.ok) {
+    return (
+      <div style={{ padding: "2rem", fontFamily: "Inter, sans-serif", maxWidth: 480 }}>
+        <p style={{ color: "#c0392b", marginBottom: "1rem" }}>{result.message}</p>
+        <button onClick={() => setResult(null)}>Try another file</button>
+      </div>
+    );
+  }
+
+  // ── File picker ──────────────────────────────────────────────────────────
   return (
     <div style={{ padding: "2rem", fontFamily: "Inter, sans-serif", maxWidth: 480 }}>
       <h2 style={{ fontSize: "1.2rem", marginBottom: "0.5rem" }}>
-        EPUB parse probe — Step 2 (dev only)
+        EPUB reader probe — Step 3 (dev only)
       </h2>
       <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "1.25rem" }}>
-        Pick a .epub. All output goes to the console — nothing renders here.
-        DRM-locked files should report drm=true; DRM-free should report ok=true.
+        Pick a DRM-free .epub. Parses all sections and opens them in PagedReader.
       </p>
+      {loading && <p style={{ color: "#888" }}>Parsing…</p>}
       <input
         ref={inputRef}
         type="file"
         accept=".epub"
         onChange={handleFile}
+        disabled={loading}
       />
     </div>
   );
