@@ -13,7 +13,7 @@ import "./PagedReader.css";
  *                                instead of getSnippets(). Existing callers never
  *                                pass this so their behaviour is unchanged.
  */
-export default function PagedReader({ onExit, initialPage = 0, onPageChange, snippets: snippetsProp }) {
+export default function PagedReader({ onExit, initialPage = 0, onPageChange, snippets: snippetsProp, disableWordTap = false }) {
   // Read the stack once on mount — stable for the lifetime of this component.
   // snippetsProp (EPUB) takes precedence when provided; all other callers omit it.
   const [snippets] = useState(() => snippetsProp ?? getSnippets().slice());
@@ -28,6 +28,7 @@ export default function PagedReader({ onExit, initialPage = 0, onPageChange, sni
 
   // Touch state for swipe detection.
   const touchStartXRef = useRef(null);
+  const touchStartYRef = useRef(null);
 
   // Navigate to a page.
   // isAutoAdvance=true  → new page auto-plays (autoPlayTrigger incremented)
@@ -84,13 +85,18 @@ export default function PagedReader({ onExit, initialPage = 0, onPageChange, sni
       return;
     }
     touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
   }
 
   function handleTouchEnd(e) {
     if (touchStartXRef.current === null) return;
     const dx = e.changedTouches[0].clientX - touchStartXRef.current;
+    const dy = e.changedTouches[0].clientY - touchStartYRef.current;
     touchStartXRef.current = null;
-    if (Math.abs(dx) < 48) return; // minimum swipe distance
+    touchStartYRef.current = null;
+    // If the gesture was more vertical than horizontal it was a scroll, not a swipe.
+    if (Math.abs(dy) > Math.abs(dx)) return;
+    if (Math.abs(dx) < 48) return; // minimum horizontal swipe distance
     if (dx < 0 && pageIndex < snippets.length - 1) {
       goToPage(pageIndex + 1, false); // swipe left → next page, land idle
     } else if (dx > 0 && pageIndex > 0) {
@@ -139,6 +145,7 @@ export default function PagedReader({ onExit, initialPage = 0, onPageChange, sni
             text={snippet.ocrText}
             onPlaybackEnd={stablePlaybackEnd.current}
             autoPlayKey={autoPlayTrigger}
+            disableWordTap={disableWordTap}
           />
         </div>
       </div>

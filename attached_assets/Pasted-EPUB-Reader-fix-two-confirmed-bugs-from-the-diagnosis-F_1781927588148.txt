@@ -1,0 +1,67 @@
+EPUB Reader — fix two confirmed bugs from the diagnosis. Fix A (scroll-vs-
+swipe) and Fix C (tap should not start TTS in the EPUB paged reader). Do NOT
+do Step 4 chunking yet. Keep existing callers (Quick Stack, Mega Stack, PDF)
+behaving EXACTLY as before.
+
+────────────────────────────────────────
+FIX A — distinguish vertical scroll from horizontal swipe
+File: PagedReader.jsx (the swipe handlers on .paged-reader-viewport)
+
+- In handleTouchStart, ALSO record the starting Y:
+    touchStartYRef.current = e.touches[0].clientY;
+  (keep the existing X record and the existing controls early-return guard).
+- In handleTouchEnd, compute dy alongside dx:
+    const dy = e.changedTouches[0].clientY - touchStartYRef.current;
+  Then, BEFORE the horizontal threshold check, add:
+    if (Math.abs(dy) > Math.abs(dx)) { touchStartYRef.current = null; return; }
+  i.e. "if the gesture was more vertical than horizontal, it was a scroll, not
+  a page swipe — ignore it."
+- Reset touchStartYRef.current = null wherever touchStartXRef is reset.
+- This applies to ALL callers and is safe: short scan/PDF pages don't scroll,
+  so dy stays tiny and behaviour is unchanged. No per-caller gating needed.
+
+────────────────────────────────────────
+FIX C — tap must NOT start TTS in the EPUB paged reader (EPUB only)
+Bug: tapping a word calls seekToWord → starts TTS from idle → short early
+sections end in ~2s → onPlaybackEnd → auto-advance cascade.
+
+Requirement: in the EPUB reader, tapping a word does NOTHING. The Play button
+still starts/stops TTS normally. Auto-advance on natural Play→end still works.
+
+- Gate this by a PROP (Lesson 75) — do NOT change tap behaviour for Quick
+  Stack / Mega Stack / PDF. They keep tap-to-seek as today.
+- Implement by passing a flag down the existing chain. Suggested:
+    PagedReader gains optional prop `disableWordTap` (default false).
+    When true, PagedReader passes a no-op (or null) onWordTap into ReaderView
+    so tapping a word does nothing. When false/absent, current behaviour.
+  If ReaderView needs an optional prop to accept "no word tap", add one that
+  DEFAULTS to current behaviour.
+- The EPUB caller (EpubTestTrigger) passes disableWordTap={true}.
+- Existing callers pass nothing → unchanged.
+
+────────────────────────────────────────
+HARD RULES
+- Only PagedReader.jsx, ReaderView.jsx (optional prop only), and
+  EpubTestTrigger.jsx may change. No other files.
+- Any new prop DEFAULTS to existing behaviour. Quick Stack / Mega Stack / PDF
+  must be byte-for-byte unchanged in behaviour — confirm by reading the call
+  sites.
+- No Step 4 chunking. No storage, no DB, no resume, no library.
+- Additive and gated. Don't rewrite the TTS hook; just control whether
+  onWordTap is wired.
+
+AFTER (Lesson 64)
+  1. cd ~/workspace/artifacts/dyslexia-reader
+  2. npm run build
+  3. git add -A
+  4. git status --short   (confirm new js hash)
+  5. git commit -m "fix(epub): scroll-vs-swipe guard + disable word-tap TTS in epub reader"
+- Then STOP. Do not push. Phil pushes from the shell.
+
+REPORT BACK
+- Show the handleTouchStart / handleTouchEnd changes (Fix A).
+- Show exactly how onWordTap is gated (Fix C) and confirm the default keeps
+  Quick Stack / Mega Stack / PDF unchanged.
+- Confirm which call sites you checked to prove no leak.
+- Confirm new js hash.
+- Do NOT claim it works on device — I verify on the phone.
