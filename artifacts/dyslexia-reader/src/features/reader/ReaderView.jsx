@@ -11,7 +11,7 @@ export default function ReaderView({
   // ── Optional PagedReader callbacks (additive — ScanSection never passes these) ──
   onPlaybackEnd,      // called on natural TTS completion only (not stop/pause)
   autoPlayKey,        // non-zero on mount → trigger play once; 0/undefined → idle
-  disableWordTap = false, // when true, tapping a word does nothing (EPUB reader)
+  collapseWhitespace = false, // when true, TTS collapses whitespace runs (EPUB — separate from word-tap)
 }) {
   // ── Local display text (prop-initialised, can be overridden by edit) ────
   // Editing only updates this local copy; callers don't need to know.
@@ -135,7 +135,7 @@ export default function ReaderView({
     onError: () => { manualStopRef.current = true; },
     // FIX 3: collapse whitespace runs before speaking in EPUB mode (where
     // word-highlight offsets do not matter). Scan mode keeps 1-for-1 \n→space.
-    collapseWhitespace: disableWordTap,
+    collapseWhitespace: collapseWhitespace,
   });
 
   // Restore rate and pitch from localStorage on mount.
@@ -307,7 +307,7 @@ export default function ReaderView({
             style={{ "--ocr-font-size": `${fontSize}px`, fontFamily, "--ocr-bg-rgb": bgColour, "--ocr-bg-opacity": bgOpacity }}
           />
         ) : (
-          <WordText text={displayText} wordIndex={wordIndex} onWordTap={disableWordTap ? null : seekToWord} fontSize={fontSize} fontFamily={fontFamily} bgColour={bgColour} bgOpacity={bgOpacity} />
+          <WordText text={displayText} wordIndex={wordIndex} onWordTap={seekToWord} fontSize={fontSize} fontFamily={fontFamily} bgColour={bgColour} bgOpacity={bgOpacity} />
         )}
         <button className="ocr-edit-btn" onClick={isEditing ? handleEditDone : handleEditStart}>
           {isEditing ? "Done" : "Edit"}

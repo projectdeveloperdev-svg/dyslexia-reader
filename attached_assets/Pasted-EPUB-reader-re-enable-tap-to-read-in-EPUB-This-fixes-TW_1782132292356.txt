@@ -1,0 +1,72 @@
+EPUB reader — re-enable tap-to-read in EPUB. This fixes TWO bugs at once:
+(a) pause → can't resume on the same page (EPUB users resume by tapping the
+word where they were, like the other readers), and (b) the "TypeError: e is
+not a function" on word tap. Both come from EPUB currently disabling word-tap
+(disableWordTap=true → onWordTap=null → tapping calls null()).
+
+DIAGNOSE FIRST. Do NOT edit until you've reported STEP 1. Then fix in the same
+task only if the diagnosis confirms it's safe.
+
+CONTEXT (why this is safe NOW but wasn't before):
+- We originally disabled EPUB word-tap because tapping started TTS on tiny/empty
+  pages → runaway auto-advance cascade.
+- That cascade is now prevented by: (1) Step-4 chunking (no giant/empty pages),
+  (2) skip-empty-page, (3) no-advance-on-speak-fail. So tap-to-read can safely
+  return.
+
+STEP 1 — DIAGNOSE (report in plain words, no edits yet):
+1. Trace what happens TODAY when the user PAUSES then presses play on the SAME
+   EPUB page. Why does it not resume? Confirm it's the manualStopRef / tap path,
+   and exactly which flag/handler blocks re-start.
+2. Confirm the TypeError source: WordText onClick calling onWordTap when EPUB
+   passes onWordTap=null.
+3. CRITICAL — confirm that RE-ENABLING tap-to-read for EPUB will NOT bring back
+   the runaway cascade. Walk the path: tap word → seekToWord → TTS starts →
+   page ends → onPlaybackEnd → advance. With chunking + skip-empty +
+   no-advance-on-fail in place, explain why this no longer cascades. If there
+   is ANY way it still cascades, STOP and report instead of changing code.
+4. Identify everything currently gated on disableWordTap (EPUB only):
+   - onWordTap null-ing (the bug)
+   - collapseWhitespace=true (the whitespace-collapse for TTS — Issue: this
+     causes the highlight-lag; note whether re-enabling tap interacts with it,
+     but DO NOT change collapse behaviour in this task — that's a separate fix).
+   Report what disableWordTap controls so we don't break the collapse feature.
+
+STEP 2 — FIX (only if STEP 1 confirms safe):
+- Re-enable tap-to-read for EPUB: EPUB should pass a REAL onWordTap (same as
+  scans) so tapping a word seeks+reads from there, restoring resume-after-pause.
+- DECOUPLE the two concerns: today disableWordTap does DOUBLE duty (kills tap
+  AND turns on collapseWhitespace). Split them so we can keep
+  collapseWhitespace=true for EPUB (TTS reliability) WITHOUT killing word-tap.
+  e.g. pass two separate props: enable word-tap normally, keep a separate
+  collapseWhitespace flag for EPUB.
+- Belt-and-braces: in WordText, guard the onClick so a null/undefined onWordTap
+  is a no-op instead of a crash:
+    onClick={onWordTap ? () => onWordTap(seg.start, seg.wordIdx) : undefined}
+  (so even if a handler is ever missing, no TypeError.)
+
+HARD RULES:
+- Scans / Quick Stack / Mega Stack / PDF must behave EXACTLY as before — confirm
+  call sites. They already pass a real onWordTap; don't change them.
+- Do NOT change collapseWhitespace behaviour itself (highlight-lag is a separate
+  later fix). Only decouple it from the tap toggle.
+- Do NOT touch voice selection (separate fix). Do NOT change chunking.
+- Keep all Step-3 and Step-4 fixes intact (skip empty, no-advance-on-fail,
+  chunking).
+- No DB, no storage, EPUB stays on /epub-test.
+
+AFTER (Lesson 64):
+  1. cd ~/workspace/artifacts/dyslexia-reader
+  2. npm run build
+  3. git add -A
+  4. git status --short   (confirm new js hash)
+  5. git commit -m "fix(epub): re-enable tap-to-read (restores resume + kills word-tap TypeError); decouple from whitespace-collapse"
+- STOP. Do not push. Phil pushes from the shell.
+
+REPORT BACK:
+- STEP 1 findings (all 4 points), especially #3 (proof the cascade can't return).
+- What changed in STEP 2, and how you decoupled tap from collapseWhitespace.
+- WordText onClick guard shown.
+- Call sites checked (prove scans/stack/PDF unchanged).
+- New js hash.
+- Do NOT claim it works — I verify on the phone.

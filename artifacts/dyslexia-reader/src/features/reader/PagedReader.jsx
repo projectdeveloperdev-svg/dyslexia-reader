@@ -13,7 +13,7 @@ import "./PagedReader.css";
  *                                instead of getSnippets(). Existing callers never
  *                                pass this so their behaviour is unchanged.
  */
-export default function PagedReader({ onExit, initialPage = 0, onPageChange, snippets: snippetsProp, disableWordTap = false }) {
+export default function PagedReader({ onExit, initialPage = 0, onPageChange, snippets: snippetsProp, collapseWhitespace = false }) {
   // Read the stack once on mount — stable for the lifetime of this component.
   // snippetsProp (EPUB) takes precedence when provided; all other callers omit it.
   const [snippets] = useState(() => snippetsProp ?? getSnippets().slice());
@@ -146,7 +146,7 @@ export default function PagedReader({ onExit, initialPage = 0, onPageChange, sni
             text={snippet.ocrText}
             onPlaybackEnd={stablePlaybackEnd.current}
             autoPlayKey={autoPlayTrigger}
-            disableWordTap={disableWordTap}
+            collapseWhitespace={collapseWhitespace}
           />
         </div>
       </div>

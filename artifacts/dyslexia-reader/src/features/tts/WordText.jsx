@@ -36,7 +36,7 @@ function WordText({ text, wordIndex, onWordTap, fontSize, fontFamily, bgColour, 
           <span
             key={i}
             className={`word-span${highlighted ? " word-highlight" : ""}`}
-            onClick={() => onWordTap(seg.start, seg.wordIdx)}
+            onClick={onWordTap ? () => onWordTap(seg.start, seg.wordIdx) : undefined}
           >
             {seg.content}
           </span>

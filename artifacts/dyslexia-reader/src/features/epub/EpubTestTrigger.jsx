@@ -75,7 +75,7 @@ export default function EpubTestTrigger() {
       <PagedReader
         snippets={snippets}
         onExit={() => setResult(null)}
-        disableWordTap={true}
+        collapseWhitespace={true}
       />
     );
   }
