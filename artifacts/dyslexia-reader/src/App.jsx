@@ -205,6 +205,7 @@ function MainApp() {
           snippets={epubSnippets}
           onExit={() => setEpubSnippets(null)}
           collapseWhitespace={true}
+          lineHighlight={true}
         />
       </div>
     );
