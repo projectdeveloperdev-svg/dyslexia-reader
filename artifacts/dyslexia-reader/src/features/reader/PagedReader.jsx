@@ -18,6 +18,11 @@ export default function PagedReader({ onExit, initialPage = 0, onPageChange, sni
   // snippetsProp (EPUB) takes precedence when provided; all other callers omit it.
   const [snippets] = useState(() => snippetsProp ?? getSnippets().slice());
 
+  // A/B/C highlight-mode toggle (EPUB only — lineHighlight gate keeps it off elsewhere).
+  // 0 = A: active line only  1 = B: line ahead  2 = C: active + next together
+  // Lives here so it survives page turns — ReaderView remounts (key=pageIndex) per page.
+  const [lineShift, setLineShift] = useState(0);
+
   const [pageIndex, setPageIndex] = useState(initialPage);
   const [slideDir, setSlideDir] = useState(null); // "right" | "left" | null
   const [autoAdvance, setAutoAdvance] = useState(true);
@@ -147,6 +152,7 @@ export default function PagedReader({ onExit, initialPage = 0, onPageChange, sni
             autoPlayKey={autoPlayTrigger}
             collapseWhitespace={collapseWhitespace}
             lineHighlight={lineHighlight}
+            lineShift={lineShift}
           />
         </div>
       </div>
@@ -164,6 +170,19 @@ export default function PagedReader({ onExit, initialPage = 0, onPageChange, sni
               onClick={() => i !== pageIndex && goToPage(i, false)}
             />
           ))}
+        </div>
+      )}
+
+      {/* ── Line-highlight mode toggle (EPUB only) ───────────────────── */}
+      {lineHighlight && (
+        <div className="paged-reader-line-mode">
+          <button
+            className="paged-reader-line-mode-btn"
+            onClick={() => setLineShift((s) => (s + 1) % 3)}
+            aria-label={`Line highlight mode ${["A","B","C"][lineShift]} — tap to cycle`}
+          >
+            {["A","B","C"][lineShift]}
+          </button>
         </div>
       )}
     </div>

@@ -13,6 +13,7 @@ export default function ReaderView({
   autoPlayKey,        // non-zero on mount → trigger play once; 0/undefined → idle
   collapseWhitespace = false, // when true, TTS collapses whitespace runs (EPUB — separate from word-tap)
   lineHighlight = false,      // when true, highlight the whole \n-line instead of one word (EPUB only)
+  lineShift = 0,              // 0=A (active), 1=B (ahead), 2=C (both). Passed through to WordText.
 }) {
   // ── Local display text (prop-initialised, can be overridden by edit) ────
   // Editing only updates this local copy; callers don't need to know.
@@ -301,7 +302,7 @@ export default function ReaderView({
             style={{ "--ocr-font-size": `${fontSize}px`, fontFamily, "--ocr-bg-rgb": bgColour, "--ocr-bg-opacity": bgOpacity }}
           />
         ) : (
-          <WordText text={displayText} wordIndex={wordIndex} onWordTap={seekToWord} lineMode={lineHighlight} fontSize={fontSize} fontFamily={fontFamily} bgColour={bgColour} bgOpacity={bgOpacity} />
+          <WordText text={displayText} wordIndex={wordIndex} onWordTap={seekToWord} lineMode={lineHighlight} lineShift={lineShift} fontSize={fontSize} fontFamily={fontFamily} bgColour={bgColour} bgOpacity={bgOpacity} />
         )}
         <button className="ocr-edit-btn" onClick={isEditing ? handleEditDone : handleEditStart}>
           {isEditing ? "Done" : "Edit"}
