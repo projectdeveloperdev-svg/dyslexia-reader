@@ -1,0 +1,40 @@
+DIAGNOSE ONLY — do not change any code.
+
+KEY USER OBSERVATION (check this first): the EPUB line-highlight
+drift always appears where there are TWO line-breaks together
+(\n\n), not single breaks. This strongly suggests \n\n is being
+collapsed from 2 characters down to 1, losing one char of offset
+each time — and the loss piles up across a page (e.g. the
+chapter-list page with ~20 entries separated by \n\n).
+
+Background:
+- Single \n is replaced 1-for-1 with a space (length preserved, fine).
+- But the collapse step (collapseWhitespace / Lesson 71) crushes
+  whitespace RUNS, so \n\n becomes a single space — 2 chars → 1.
+- speakOffsetRef is the PRE-collapse offset; onRangeStart returns
+  offsets into the COLLAPSED text. Every \n\n shrink throws them
+  out of sync by one more char → highlight lands on the wrong line.
+- Symptom: chapter-list page (full of \n\n) drifts badly, and it
+  bleeds into the next few normal pages before settling.
+
+Investigate (read-only) and report:
+
+1. Confirm: does \n\n (and longer whitespace runs) collapse to a
+   SHORTER string in the speak path, while the DISPLAYED text keeps
+   full length? Show the exact lines. Confirm this is the offset drift.
+
+2. Why does it BLEED into later pages? ReaderView remounts per page
+   (key={pageIndex}), so state should reset. Find the exact thing
+   carrying over (a ref, speakOffsetRef, the TTS queue, etc.).
+
+3. Cleanest fix — strong preference for a LENGTH-PRESERVING collapse
+   (Lesson 71): transform whitespace at the speak step so the
+   character count stays identical (e.g. replace each whitespace char
+   with a single space but DON'T shrink runs), so onRangeStart offsets
+   stay aligned with the displayed text. Confirm this is viable, and
+   whether TTS still reads cleanly with runs of spaces left in.
+
+4. Confirm any fix stays EPUB-only (collapseWhitespace already gates
+   it) — Quick Stack / PDF / Mega Stack untouched.
+
+Report as a short list. Wait for approval before touching code.
