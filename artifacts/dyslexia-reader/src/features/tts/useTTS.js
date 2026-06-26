@@ -191,13 +191,15 @@ export function useTTS(text, { onError, collapseWhitespace = false } = {}) {
     // FIX 3: Build the spoken text from the raw slice.
     // Default (scan): 1-for-1 \n→space so char offsets stay aligned with
     // wordsRef and onRangeStart word-highlighting keeps working.
-    // collapseWhitespace (EPUB): also collapse runs and trim — EPUB sections
-    // can be mostly newlines; the TTS engine rejects strings of spaces.
-    // Word-highlight offsets do not matter in EPUB mode (disableWordTap=true).
+    // Replace every \n with a space (1-for-1, length-preserving) so onRangeStart
+    // offsets stay aligned with the displayed text in all modes.
+    // collapseWhitespace (EPUB) previously ran .replace(/\s+/g," ").trim() here,
+    // which shrank \n\n (2 chars) to one space (1 char), causing cumulative offset
+    // drift on pages with many \n\n separators. rawSlice is already clean — the
+    // TTS engine handles residual space runs fine, and FIX 1 guards against
+    // all-whitespace strings before speak() is called.
     const rawSlice   = text.slice(offset).replace(/\n/g, " ");
-    const spokenText = collapseWhitespaceRef.current
-      ? rawSlice.replace(/\s+/g, " ").trim()
-      : rawSlice;
+    const spokenText = rawSlice;
 
     // FIX 1: Do NOT call speak() on a page with no word characters.
     // Passing "" or "   " to the native TTS engine throws "Failed to read text",
