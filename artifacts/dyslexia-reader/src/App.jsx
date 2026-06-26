@@ -9,8 +9,8 @@ import { clearSnippets, addSnippet } from "./features/stack/stackStore";
 import { loadPdfPages } from "./features/pdf/pdfLoader";
 import { commitMegaStack } from "./features/megastack/commitMegaStack";
 import { updateLastPage } from "./features/megastack/megaStackStorage.js";
-// TEMPORARY — epub Step 1 probe. Remove with EpubTestTrigger.jsx when real UI is built.
-import EpubTestTrigger from "./features/epub/EpubTestTrigger";
+import { parseEpub } from "./features/epub/epubParser";
+import { chunkText } from "./features/epub/chunkText";
 import "./App.css";
 
 import * as pdfjs from "pdfjs-dist";
@@ -38,6 +38,10 @@ function MainApp() {
 
   const pdfInputRef = useRef(null);
   const [pdfError, setPdfError] = useState(null);
+
+  const epubInputRef = useRef(null);
+  const [epubSnippets, setEpubSnippets] = useState(null);
+  const [epubError, setEpubError] = useState(null);
 
   // ── Quick Stack ───────────────────────────────────────────────────────
 
@@ -111,6 +115,38 @@ function MainApp() {
     });
   }
 
+  // ── EPUB ──────────────────────────────────────────────────────────────
+
+  async function handleEpubFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEpubError(null);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      // Clear AFTER the read completes — not before (blob-release trap).
+      e.target.value = "";
+      const parsed = await parseEpub(arrayBuffer);
+      if (!parsed.ok) {
+        setEpubError(parsed.message);
+        return;
+      }
+      const snippets = [];
+      for (const section of parsed.sections) {
+        for (const chunk of chunkText(section.text)) {
+          snippets.push({ image: null, ocrText: chunk });
+        }
+      }
+      if (snippets.length === 0) {
+        setEpubError("This eBook appears to have no readable text.");
+        return;
+      }
+      setEpubSnippets(snippets);
+    } catch (err) {
+      console.error("[App] epub open failed:", err);
+      setEpubError("Could not read this eBook.");
+    }
+  }
+
   // ── PDF ───────────────────────────────────────────────────────────────
 
   async function handlePdfFile(e) {
@@ -158,6 +194,22 @@ function MainApp() {
     );
   }
 
+  // eBook reader screen
+  if (epubSnippets) {
+    return (
+      <div className="app-root">
+        <div className="app-blob app-blob--pink" aria-hidden="true" />
+        <div className="app-blob app-blob--lavender" aria-hidden="true" />
+        <img src="/dexy-wordmark.png" alt="Dexy" className="app-logo" />
+        <PagedReader
+          snippets={epubSnippets}
+          onExit={() => setEpubSnippets(null)}
+          collapseWhitespace={true}
+        />
+      </div>
+    );
+  }
+
   // Reader screen (Quick Stack, Mega Stack, PDF)
   if (stackPhase === "preview") {
     return (
@@ -181,7 +233,7 @@ function MainApp() {
       <div className="app-blob app-blob--lavender" aria-hidden="true" />
       <img src="/dexy-wordmark.png" alt="Dexy" className="app-logo" />
 
-      {/* Top row — premium */}
+      {/* Top row — Mega Stack */}
       <div className="app-action-row">
         <button
           className="app-action-btn app-action-btn--premium"
@@ -189,11 +241,21 @@ function MainApp() {
         >
           <span className="app-action-label">Mega Stack</span>
         </button>
+      </div>
+
+      {/* Second row — file openers */}
+      <div className="app-action-row">
         <button
           className="app-action-btn app-action-btn--premium"
           onClick={() => pdfInputRef.current?.click()}
         >
           <span className="app-action-label">Open PDF</span>
+        </button>
+        <button
+          className="app-action-btn app-action-btn--premium"
+          onClick={() => epubInputRef.current?.click()}
+        >
+          <span className="app-action-label">Open eBook</span>
         </button>
       </div>
 
@@ -210,13 +272,20 @@ function MainApp() {
         </button>
       </div>
 
-      {/* Hidden PDF file input */}
+      {/* Hidden file inputs */}
       <input
         ref={pdfInputRef}
         type="file"
         accept="application/pdf"
         style={{ display: "none" }}
         onChange={handlePdfFile}
+      />
+      <input
+        ref={epubInputRef}
+        type="file"
+        accept=".epub"
+        style={{ display: "none" }}
+        onChange={handleEpubFile}
       />
       {pdfError && (
         <p
@@ -228,6 +297,18 @@ function MainApp() {
           }}
         >
           {pdfError}
+        </p>
+      )}
+      {epubError && (
+        <p
+          style={{
+            color: "#c0392b",
+            fontFamily: "Inter, sans-serif",
+            fontSize: "0.9rem",
+            margin: "0.5rem 1rem 0",
+          }}
+        >
+          {epubError}
         </p>
       )}
 
@@ -251,8 +332,6 @@ function App() {
     <WouterRouter base="">
       <Switch>
         <Route path="/voice-lab" component={VoiceLab} />
-        {/* TEMPORARY — epub Step 1 probe. Remove when real EPUB UI is built. */}
-        <Route path="/epub-test" component={EpubTestTrigger} />
         <Route component={MainApp} />
       </Switch>
     </WouterRouter>

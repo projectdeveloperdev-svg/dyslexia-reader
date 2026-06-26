@@ -205,7 +205,6 @@ export function useTTS(text, { onError, collapseWhitespace = false } = {}) {
     const isEmpty = !/\w/.test(spokenText);
     if (isEmpty) {
       if (speakIdRef.current === id) {
-        console.log(`[epub-tts] chars=${spokenText.length} -> skipped (empty page, suppressing advance)`);
         // Mark as non-natural end so advance is suppressed (same as FIX 2).
         onErrorRef.current?.();
         removeRangeListener();
@@ -234,7 +233,6 @@ export function useTTS(text, { onError, collapseWhitespace = false } = {}) {
 
       // Natural completion — only process if this speak session is still current.
       if (speakIdRef.current === id) {
-        console.log(`[epub-tts] chars=${spokenText.length} -> spoke (natural end)`);
         removeRangeListener();
         charIndexRef.current = 0;
         setWordIndex(-1);
@@ -243,7 +241,6 @@ export function useTTS(text, { onError, collapseWhitespace = false } = {}) {
     } catch (err) {
       if (speakIdRef.current === id) {
         console.error("[useTTS] speak() failed:", err);
-        console.log(`[epub-tts] chars=${spokenText.length} -> failed (suppressing advance)`);
         // FIX 2: mark as non-natural so the speaking→idle transition in
         // ReaderView does NOT fire onPlaybackEnd and does NOT advance the page.
         // This is the core loop-killer: speak failures must never auto-advance.

@@ -228,10 +228,7 @@ export default function ReaderView({
     prevTtsStateRef.current = ttsState;
     // Natural end: was speaking, now idle, and NOT a manual-stop or speak-fail.
     if (prev === "speaking" && ttsState === "idle" && !manualStopRef.current) {
-      console.log("[epub-tts] advance reason=natural-end");
       if (onPlaybackEndRef.current) onPlaybackEndRef.current();
-    } else if (prev === "speaking" && ttsState === "idle" && manualStopRef.current) {
-      console.log("[epub-tts] advance reason=none (manual-stop or speak-failed)");
     }
     // Reset the flag whenever TTS resumes/starts — next end may be natural again.
     if (ttsState === "speaking") {
@@ -267,11 +264,7 @@ export default function ReaderView({
     // (braces), but this outer guard avoids even starting the TTS cycle.
     const hasContent = /\w/.test(displayText ?? "");
     const chars = (displayText ?? "").length;
-    if (!hasContent) {
-      console.log(`[epub-tts] autoplay: empty=true chars=${chars} -> skipped toggle`);
-      return;
-    }
-    console.log(`[epub-tts] autoplay: empty=false chars=${chars} -> toggle`);
+    if (!hasContent) return;
     toggle();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

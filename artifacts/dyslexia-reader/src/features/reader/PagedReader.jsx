@@ -73,7 +73,6 @@ export default function PagedReader({ onExit, initialPage = 0, onPageChange, sni
     if (!autoAdvanceRef.current) return;
     const next = pageIndexRef.current + 1;
     if (next < snippetsLenRef.current) {
-      console.log(`[epub-tts] advance page=${pageIndexRef.current} -> ${next}`);
       goToPageRef.current(next, true);
     }
     // Last page: stop silently — do nothing.
